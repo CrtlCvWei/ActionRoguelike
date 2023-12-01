@@ -1,0 +1,2 @@
+Intermediate/ProjectFiles/.Rider/Win64/Development/Editor/UE5.json filter=lfs diff=lfs merge=lfs -text
+Intermediate/ProjectFiles/UE5.vcxproj filter=lfs diff=lfs merge=lfs -text

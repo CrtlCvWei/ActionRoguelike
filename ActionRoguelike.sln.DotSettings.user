@@ -1,0 +1,9 @@
+﻿<wpf:ResourceDictionary xml:space="preserve" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:s="clr-namespace:System;assembly=mscorlib" xmlns:ss="urn:shemas-jetbrains-com:settings-storage-xaml" xmlns:wpf="http://schemas.microsoft.com/winfx/2006/xaml/presentation">
+	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=8abd9568_002De9c7_002D4728_002Da0f4_002D346888e41518/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" IsActive="True" Name="All tests from Solution" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;&#xD;
+  &lt;Not&gt;&#xD;
+    &lt;Or&gt;&#xD;
+      &lt;Project Location="G:\Epic\uProjects\ActionRoguelike" Presentation="&amp;lt;Engine&amp;gt;" /&gt;&#xD;
+      &lt;Project Location="G:\Epic\uProjects\ActionRoguelike" Presentation="&amp;lt;Programs&amp;gt;" /&gt;&#xD;
+    &lt;/Or&gt;&#xD;
+  &lt;/Not&gt;&#xD;
+&lt;/SessionState&gt;</s:String></wpf:ResourceDictionary>
