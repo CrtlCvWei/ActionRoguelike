@@ -4,7 +4,6 @@
 #include "AWInteractionComponent.h"
 
 #include "AWGameplayInterface.h"
-#include "PhysicsAssetRenderUtils.h"
 
 
 static TAutoConsoleVariable<bool> CVarDebugDrawInteractionLines(

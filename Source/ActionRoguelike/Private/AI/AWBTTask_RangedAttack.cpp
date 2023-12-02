@@ -4,9 +4,6 @@
 #include "AI/AWBTTask_RangedAttack.h"
 #include "..\Public\AWAttributeComp.h"
 #include "AIController.h"
-#include "K2Node_SpawnActorFromClass.h"
-#include "Algo/Rotate.h"
-
 #include "BehaviorTree/BlackboardComponent.h"
 #include "GameFramework/Character.h"
 

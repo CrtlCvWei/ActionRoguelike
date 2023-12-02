@@ -50,9 +50,6 @@ void AAWExplosiveBarrel::WhenActorsHit(UPrimitiveComponent* HitComp, AActor* Oth
 		TimerDelegate.BindUFunction(this, FName("Fire"), OtherActor);
 		//
 		GetWorldTimerManager().SetTimer(ExplosiveTimeHandler, TimerDelegate, 2.f, false);
-		UE_LOG(LogTemp, Display, TEXT("Hit by : %s"), *CollisionProfile.ToString());
-		FString CombineText = FString::Printf(TEXT("Hit at here:%s"), *Hit.ImpactPoint.ToString());
-		DrawDebugString(GetWorld(), Hit.ImpactPoint, CombineText, nullptr, FColor::Green, 2.0f, true);
 	}
 	else
 	{
@@ -62,7 +59,8 @@ void AAWExplosiveBarrel::WhenActorsHit(UPrimitiveComponent* HitComp, AActor* Oth
 
 void AAWExplosiveBarrel::Fire(AActor* OtherActor)
 {
-	FVector BoostIntensity = FVector::UpVector * this->ImpluseItself; //我们对网格体组件施加作用力，让其能向上弹起
+	//我们对网格体组件施加作用力，让其能向上弹起
+	FVector BoostIntensity = FVector::UpVector * this->ImpluseItself; 
 	this->SMeshComp->AddImpulse(BoostIntensity, NAME_None, true);
 	this->RForce->FireImpulse();
 	
@@ -79,7 +77,7 @@ void AAWExplosiveBarrel::Fire(AActor* OtherActor)
 	if (GetWorld()->SweepMultiByChannel(HitResults, GetActorLocation(), GetActorLocation(), FQuat::Identity, ECC_Pawn,
 	                                    CollisionShape, QueryParams))
 	{
-		// 遍历扫描结果
+
 		for (const FHitResult& HitResult : HitResults)
 		{
 			AActor* HitActor = HitResult.GetActor();
@@ -92,7 +90,10 @@ void AAWExplosiveBarrel::Fire(AActor* OtherActor)
 					UAWAttributeComp* Attribute = Cast<UAWAttributeComp>(HitActor->GetComponentByClass(UAWAttributeComp::StaticClass()));
 					if (Attribute)
 					{
-						Attribute->SetHealth(-30,OtherActor->GetInstigator());
+						if(OtherActor->GetInstigator())
+							Attribute->SetHealth(-30,OtherActor->GetInstigator());
+						else
+							Attribute->SetHealth(-30,this);
 					}	
 				}
 			}

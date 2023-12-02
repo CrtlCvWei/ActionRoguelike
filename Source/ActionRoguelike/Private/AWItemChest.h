@@ -1,10 +1,10 @@
+
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
 #include "CoreMinimal.h"
 #include "AWGameplayInterface.h"
-#include "GameFramework/Character.h"
 #include "AWItemChest.generated.h"
 
 UCLASS()

@@ -3,7 +3,6 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "AWGameplayInterface.h"
 #include "AWPowerUpActorBase.h"
 #include "GameFramework/Actor.h"
 #include "AWHealPoint.generated.h"

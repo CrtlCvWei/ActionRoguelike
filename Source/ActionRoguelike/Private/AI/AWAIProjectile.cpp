@@ -8,7 +8,6 @@
 #include "Niagara/Public/NiagaraComponent.h"
 #include "Components/AudioComponent.h"
 #include "GameFramework/ProjectileMovementComponent.h"
-#include "Kismet/GameplayStatics.h"
 
 
 static TAutoConsoleVariable<float> CVarTurnAIProjectileDamage(

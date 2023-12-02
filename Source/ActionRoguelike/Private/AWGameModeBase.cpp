@@ -8,12 +8,9 @@
 #include "AWPlayerState.h"
 #include "AWReward.h"
 #include "EngineUtils.h"
-#include "K2Node_SpawnActorFromClass.h"
 #include "AI/AWAICharacter.h"
 #include "EnvironmentQuery/EnvQueryTypes.h"
 #include "EnvironmentQuery/EnvQueryManager.h"
-#include "GameFramework/PlayerStart.h"
-#include "Kismet/GameplayStatics.h"
 
 AAWGameModeBase::AAWGameModeBase()
 {
@@ -87,14 +84,6 @@ void AAWGameModeBase::PlayerReSpawnTimeElasped(APlayerController* Controller)
 	}
 }
 
-// void AAWGameModeBase::PlayerDestoryTimeElasped(AActor* Death)
-// {
-// 	if (ensureAlways(Death))
-// 	{
-// 		Death->Destroy();
-// 	}
-// }
-
 void AAWGameModeBase::ActorBeenKilled(AActor* Death, AActor* Killer, UAWReward* Reward)
 {
 	AAwCharacter* Player = Cast<AAwCharacter>(Death);
@@ -102,13 +91,13 @@ void AAWGameModeBase::ActorBeenKilled(AActor* Death, AActor* Killer, UAWReward* 
 	{
 		// if the player die... And the Reward is None
 		FTimerHandle ReSpawnTimerHandle;
-		FTimerDelegate Delegate_1;
+		FTimerDelegate Delegate;
 		APlayerController* PC = Cast<APlayerController>(Player->GetController());
 
 		if (ensure(PC))
 		{
-			Delegate_1.BindUFunction(this, "PlayerReSpawnTimeElasped", PC);
-			GetWorld()->GetTimerManager().SetTimer(ReSpawnTimerHandle, Delegate_1, 3.f, false);
+			Delegate.BindUFunction(this, "PlayerReSpawnTimeElasped", PC);
+			GetWorld()->GetTimerManager().SetTimer(ReSpawnTimerHandle, Delegate, 3.f, false);
 		}
 	}
 	else
@@ -118,17 +107,25 @@ void AAWGameModeBase::ActorBeenKilled(AActor* Death, AActor* Killer, UAWReward* 
 		{
 			// if the AI die...  Rewards the killer
 			AAwCharacter* KillerPlayer = Cast<AAwCharacter>(Killer);
-			if (ensure(Reward))
+			if(KillerPlayer)
 			{
-				AAWPlayerState* State = KillerPlayer->GetPlayerState<AAWPlayerState>();
-				if (ensure(State))
+				if (ensure(Reward))
 				{
-					// not Credits Now~
-					// State->AddCredits()
+					AAWPlayerState* State = KillerPlayer->GetPlayerState<AAWPlayerState>();
+					if (ensure(State))
+					{
+						// not Credits Now~
+						// State->AddCredits()
 
-					State->AddScores(Reward->GetScore());
+						State->AddScores(Reward->GetScore());
+					}
 				}
 			}
+			else
+			{
+				// not killed by player
+			}
+			
 		}
 	}
 

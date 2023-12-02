@@ -97,7 +97,7 @@ void AAWAICharacter::OnHealthChange(AActor* InstigatorActor, UAWAttributeComp* A
 		}
 		else
 		{
-			if (InstigatorActor != this)
+			if (InstigatorActor)
 			{
 				if (HealthBarClass != nullptr)
 				{

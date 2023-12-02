@@ -230,10 +230,7 @@ void AAwCharacter::PrimaryAttack()
 	this->ActionComp->StartActionByName(this,"PrimaryAttack");
 }
 
-// void AAwCharacter::PrimaryAttack_TimeElasped()
-// {
-// 	this->SpawnProjectile(ProjuctileClass);
-// }
+
 
 void AAwCharacter::BlackHoleAbility_TimeElasped()
 {

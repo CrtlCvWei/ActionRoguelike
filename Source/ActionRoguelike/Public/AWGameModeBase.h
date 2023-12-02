@@ -40,8 +40,6 @@ protected:
 	UFUNCTION()
 	void SpawnBotTimerElasped();
 	
-	// UFUNCTION()
-	// void PlayerDestoryTimeElasped(AActor* Death);
 	UFUNCTION()
 	void PlayerReSpawnTimeElasped(APlayerController* Controller);
 

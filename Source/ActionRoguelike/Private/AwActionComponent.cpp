@@ -4,7 +4,6 @@
 #include "AwActionComponent.h"
 
 #include "AwAction.h"
-#include "Logging/StructuredLog.h"
 
 // Sets default values for this component's properties
 UAwActionComponent::UAwActionComponent()

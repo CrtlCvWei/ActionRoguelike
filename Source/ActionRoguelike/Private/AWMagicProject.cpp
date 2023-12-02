@@ -4,7 +4,6 @@
 #include "AWMagicProject.h"
 
 #include "AWAttributeComp.h"
-#include "NiagaraDataInterfaceEmitterBinding.h"
 #include "Components/AudioComponent.h"
 #include "Particles/ParticleSystemComponent.h"
 

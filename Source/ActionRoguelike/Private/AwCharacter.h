@@ -85,7 +85,6 @@ protected:
 	FRotator GetProjectileRotation(FVector HandLocation);
 	void SpawnProjectile(TSubclassOf<AActor> ClassToSpawn);
 	void PrimaryAttack();
-	void PrimaryAttack_TimeElasped();
 	void BlackHoleAbility();
 	void BlackHoleAbility_TimeElasped();
 	//Interact
@@ -113,7 +112,7 @@ protected:
 
 	UFUNCTION(Exec)
 	void HealSelf(float v = 100);
-public:
+public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
