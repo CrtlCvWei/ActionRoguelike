@@ -41,6 +41,7 @@ Until now, this project includes the following implemented features:
 
 学习教程来自Tom Looman的ActionRogueLike 课程，游戏类型为第三人称动作射击。使用C++/蓝图。
 截止目前，本项目实现内容包含：
+
 **角色相关：**
 
 - 实现第三人称镜头，WASD移动/冲刺/跳跃/魔法攻击/黑洞技能，使用Actor组件实现
