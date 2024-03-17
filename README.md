@@ -1,6 +1,6 @@
 # ActionRoguelike
 
-学习教程来自Tom Looman的ActionRogueLike 课程，游戏类型为第三人称动作射击。使用C++/蓝图。
+学习教程来自[Tom Looman]((https://github.com/tomlooman))的ActionRogueLike 课程，游戏类型为第三人称动作射击。使用C++/蓝图。
 截止目前，本项目实现内容包含：
 
 **角色相关：**
