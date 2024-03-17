@@ -99,13 +99,13 @@ void AAwCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	DrawDebugLine(GetWorld(), GetMesh()->GetSocketLocation("Head"),
-	              GetMesh()->GetSocketLocation("Head") + GetActorForwardVector() * 100, FColor::Red, false, 0.1f, 0,
-	              1.f);
+	// DrawDebugLine(GetWorld(), GetMesh()->GetSocketLocation("Head"),
+	//               GetMesh()->GetSocketLocation("Head") + GetActorForwardVector() * 100, FColor::Red, false, 0.1f, 0,
+	//               1.f);
 
 
-	if (!bWasJumping && !GetCharacterMovement()->IsFalling())
-		DetectWall();
+	// if (!bWasJumping && !GetCharacterMovement()->IsFalling())
+	// 	DetectWall();
 }
 
 void AAwCharacter::BeginSprint()
@@ -159,8 +159,8 @@ void AAwCharacter::MoveRight(float Values)
 bool AAwCharacter::DetectWall()
 {
 	FVector StartLocation = GetMesh()->GetSocketLocation(RightKneeSocketName);
-	FVector EndLocation = StartLocation + GetActorForwardVector() * 100;
-	FVector BoxExtend = FVector(25, 25, 25);
+	FVector EndLocation = StartLocation + GetActorForwardVector() * 150;
+	FVector BoxExtend = FVector(50, 50, 25);
 
 	FCollisionShape CollisionBox = FCollisionShape::MakeBox(BoxExtend);
 	// 创建射线参数
@@ -177,8 +177,8 @@ bool AAwCharacter::DetectWall()
 	FVector Hit_normal = HitResult.ImpactNormal;
 	FVector Hit_location = HitResult.ImpactPoint;
 
-	StartLocation = Hit_location + Hit_normal * 100;
-	EndLocation = Hit_location;
+	StartLocation = Hit_location + Hit_normal * 150;
+	EndLocation = Hit_location - Hit_normal * 50;
 	// Draw
 	// DrawDebugBox(GetWorld(), HitResult.ImpactPoint, BoxExtend, FQuat::Identity, FColor::Red, false, 2.f);
 
@@ -187,20 +187,27 @@ bool AAwCharacter::DetectWall()
 	if (abs(Angle) > 30)
 		return false;
 
-
+	const float Dis_thred = 50.f;
+	FVector Hit_location_pre = Hit_location;
 	FVector ZOffest = FVector(0, 0, 25);
-	TArray<FHitResult> HitResults;
-	while (bHit && StartLocation.Z < BaseEyeHeight + 100.)
+
+	while (bHit && StartLocation.Z < BaseEyeHeight + 120.)
 	{
-		bHit = GetWorld()->SweepMultiByObjectType(HitResults, StartLocation, EndLocation, FQuat::Identity,
-		                                          ECC_WorldStatic,
-		                                          CollisionBox, CollisionParams);
-		for (auto& result : HitResults)
-		{
-			Hit_normal = result.ImpactNormal;
-			Hit_location = result.ImpactPoint;
-			// DrawDebugBox(GetWorld(), result.ImpactPoint, BoxExtend, FQuat::Identity, FColor::Red, false, 2.f);
-		}
+		bHit = GetWorld()->SweepSingleByObjectType(HitResult, StartLocation, EndLocation, FQuat::Identity,
+		                                           ECC_WorldStatic,
+		                                           CollisionBox, CollisionParams);
+		if (!bHit)
+			break;
+		float Dis = FMath::Abs((Hit_location - Hit_location_pre).Dot(GetActorForwardVector()));
+		// 
+		Hit_normal = HitResult.ImpactNormal;
+		Hit_location = HitResult.ImpactPoint;
+		if (Dis > Dis_thred ||
+			Hit_normal.Z < -0.5 || Hit_normal.Z > 0.86)
+			return false;
+
+		// DrawDebugBox(GetWorld(), result.ImpactPoint, BoxExtend, FQuat::Identity, FColor::Red, false, 2.f);
+		Hit_location_pre = Hit_location;
 		StartLocation += ZOffest;
 		EndLocation += ZOffest;
 	}
@@ -208,11 +215,14 @@ bool AAwCharacter::DetectWall()
 	// 检测墙体厚度?
 
 
-	if (Hit_location.Z > BaseEyeHeight + 100.)
+	if (Hit_location.Z > BaseEyeHeight + 15.)
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 0.f, FColor::White, Hit_normal.ToString());
 		DrawDebugBox(GetWorld(), Hit_location, BoxExtend, FQuat::Identity, FColor::Green, false, 2.f);
+		return true;
+	}
 
-	GEngine->AddOnScreenDebugMessage(-1, 0.f, FColor::White, Hit_normal.ToString());
-	return true;
+	return false;
 }
 
 FRotator AAwCharacter::FindClimbRotation(const FVector StartLoca, const FVector EndLoca, FVector ObstacleNormalVec)
@@ -238,7 +248,7 @@ void AAwCharacter::ClimbingTick()
 	// 当玩家处于攀爬状态时，时刻检测墙面
 
 	static FHitResult ClimbHitResult;
-	static  FCollisionQueryParams CollisionParams;
+	static FCollisionQueryParams CollisionParams;
 	CollisionParams.AddIgnoredActor(this);
 
 	FVector ActorLocation = GetMesh()->GetSocketLocation("Chest");
@@ -300,7 +310,6 @@ void AAwCharacter::ClimbingTick()
 	}
 	ClimbRotator = NewRotator;
 }
-
 
 void AAwCharacter::SwitchToClimbingMode()
 {
@@ -406,7 +415,7 @@ bool AAwCharacter::DetectAndClimbUp()
 	FHitResult HitResult;
 	const FRotator Rotation = FRotator(0, ClimbRotator.Yaw, 0);
 	const FVector StartLocation = GetActorLocation() + FRotationMatrix(ClimbRotator).GetScaledAxis(EAxis::Z) * 150;
-	const FVector EndLocation = StartLocation + FRotationMatrix(Rotation).GetScaledAxis(EAxis::X) * 80;
+	const FVector EndLocation = StartLocation + FRotationMatrix(Rotation).GetScaledAxis(EAxis::X) * 50;
 
 	bool bHit = UKismetSystemLibrary::CapsuleTraceSingle(GetWorld(), StartLocation, EndLocation,
 	                                                     30, 90, UEngineTypes::ConvertToTraceType(ECC_WorldStatic),
@@ -537,7 +546,7 @@ void AAwCharacter::PrimaryInterat()
 {
 	if (this->InteractionComp)
 	{
-			InteractionComp->PrimaryIntract();
+		InteractionComp->PrimaryIntract();
 	}
 }
 
