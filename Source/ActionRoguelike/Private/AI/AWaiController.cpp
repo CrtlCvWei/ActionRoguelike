@@ -16,7 +16,7 @@ void AAWaiController::BeginPlay()
 	if (PlayerPawn)
 	{
 		// Get BlackBoard
-		GetBlackboardComponent()->SetValueAsVector("MovetoLoc",PlayerPawn->GetActorLocation());
+		// GetBlackboardComponent()->SetValueAsVector("MovetoLoc",PlayerPawn->GetActorLocation());
 		GetBlackboardComponent()->SetValueAsObject("TargetActor",PlayerPawn);
 	}
 

@@ -14,6 +14,7 @@ class ACTIONROGUELIKE_API UAWInteractionComponent : public UActorComponent
 
 public:
 
+	UFUNCTION()
 	void PrimaryIntract();
 	
 	// Sets default values for this component's properties

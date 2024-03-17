@@ -42,9 +42,10 @@ void AAWGameModeBase::AfterQuery(UEnvQueryInstanceBlueprintWrapper* QueryInstanc
 
 	TArray<FVector> Location;
 	QueryInstance->GetQueryResultsAsLocations(Location);
+	FVector Up(0.f,0.f,90.f);
 	if (Location.Num() > 0)
 	{
-		GetWorld()->SpawnActor<AActor>(MinionsClass, Location[0], FRotator::ZeroRotator);
+		GetWorld()->SpawnActor<AActor>(MinionsClass, Location[0]+Up, FRotator::ZeroRotator);
 	}
 }
 
@@ -66,7 +67,7 @@ void AAWGameModeBase::SpawnBotTimerElasped()
 	}
 
 	UEnvQueryInstanceBlueprintWrapper* QueryInstance = UEnvQueryManager::RunEQSQuery(
-		this, SqawnBotQuery, this, EEnvQueryRunMode::RandomBest5Pct, nullptr);
+		this, SqawnBotQuery, this, EEnvQueryRunMode::RandomBest25Pct, nullptr);
 	if (ensure(QueryInstance))
 	{
 		QueryInstance->GetOnQueryFinishedEvent().AddDynamic(this, &AAWGameModeBase::AfterQuery);
@@ -107,7 +108,7 @@ void AAWGameModeBase::ActorBeenKilled(AActor* Death, AActor* Killer, UAWReward* 
 		{
 			// if the AI die...  Rewards the killer
 			AAwCharacter* KillerPlayer = Cast<AAwCharacter>(Killer);
-			if(KillerPlayer)
+			if (KillerPlayer)
 			{
 				if (ensure(Reward))
 				{
@@ -125,7 +126,6 @@ void AAWGameModeBase::ActorBeenKilled(AActor* Death, AActor* Killer, UAWReward* 
 			{
 				// not killed by player
 			}
-			
 		}
 	}
 

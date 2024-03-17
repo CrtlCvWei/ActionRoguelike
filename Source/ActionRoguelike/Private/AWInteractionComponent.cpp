@@ -19,60 +19,58 @@ void UAWInteractionComponent::PrimaryIntract()
 		UE_LOG(LogTemp, Error, TEXT("Owner is null in UAWInteractionComponent::PrimaryIntract()"));
 		return;
 	}
-	else
+	
+	FVector OwnerLocation;
+	FRotator EyeRotation;
+	FVector EndLocation;
+	bool bDraw = CVarDebugDrawInteractionLines.GetValueOnGameThread(); // visulize
+
+	if (Owner_Character)
 	{
-		FVector OwnerLocation;
-		FRotator EyeRotation;
-		FVector EndLocation;
-		bool bDraw = CVarDebugDrawInteractionLines.GetValueOnGameThread(); // visulize
+		/* 从摄像机中心获取Rotation*/
+		// Owner_Character->GetController()->GetPlayerViewPoint(OwnerLocation, EyeRotation);
+		Owner_Character->GetActorEyesViewPoint(OwnerLocation, EyeRotation);
+	}
 
-		if (Owner_Character)
+	else
+		Owner->GetActorEyesViewPoint(OwnerLocation, EyeRotation);
+	// 此时 EyeRotation.Vector() 为旋转器旋转状态的单位向量，也就是旋转器的指向方向
+	EndLocation = OwnerLocation + (EyeRotation.Vector() * this->InteractionDistance);
+
+	FCollisionObjectQueryParams ObjectQueryParams;
+	ObjectQueryParams.AddObjectTypesToQuery(ECC_WorldDynamic);
+
+	FColor color = FColor::Red;
+	TArray<FHitResult> HitResults;
+	FCollisionShape shape;
+	shape.SetSphere(30.f);
+
+	if (GetWorld()->SweepMultiByObjectType(HitResults, OwnerLocation, EndLocation, FQuat::Identity,
+	                                       ObjectQueryParams, shape))
+	{
+		// if any hits found out
+		for (auto HitResult : HitResults)
 		{
-			/* 从摄像机中心获取Rotation*/
-			// Owner_Character->GetController()->GetPlayerViewPoint(OwnerLocation, EyeRotation);
-			Owner_Character->GetActorEyesViewPoint(OwnerLocation,EyeRotation);
-		}
-
-		else
-			Owner->GetActorEyesViewPoint(OwnerLocation, EyeRotation);
-		// 此时 EyeRotation.Vector() 为旋转器旋转状态的单位向量，也就是旋转器的指向方向
-		EndLocation = OwnerLocation + (EyeRotation.Vector() * this->InteractionDistance);
-
-		FCollisionObjectQueryParams ObjectQueryParams;
-		ObjectQueryParams.AddObjectTypesToQuery(ECC_WorldDynamic);
-
-		FColor color = FColor::Red;
-		TArray<FHitResult> HitResults;
-		FCollisionShape shape;
-		shape.SetSphere(30.f);
-
-		if (GetWorld()->SweepMultiByObjectType(HitResults, OwnerLocation, EndLocation, FQuat::Identity,
-		                                       ObjectQueryParams, shape))
-		{
-			// if any hits found out
-			for (auto HitResult : HitResults)
+			AActor* HitActor = HitResult.GetActor();
+			if (HitActor)
 			{
-				AActor* HitActor = HitResult.GetActor();
-				if (HitActor)
+				//do implements
+				if (HitActor->Implements<UAWGameplayInterface>()) //  是UAWGameplayInterface不是IAWGameplayInterface
 				{
-					//do implements
-					if (HitActor->Implements<UAWGameplayInterface>()) //  是UAWGameplayInterface不是IAWGameplayInterface
-					{
-						IAWGameplayInterface::Execute_Interact(HitActor, Owner_Character);
-						break; // one thing a time
-					}
-				}
-				if (bDraw)
-				{
-					color = FColor::Green;
-					DrawDebugSphere(GetWorld(), HitResult.ImpactPoint, 30.f, 32, color, false, 2., 0., 1);
+					IAWGameplayInterface::Execute_Interact(HitActor, Owner_Character);
+					break; // one thing a time
 				}
 			}
+			if (bDraw)
+			{
+				color = FColor::Green;
+				DrawDebugSphere(GetWorld(), HitResult.ImpactPoint, 30.f, 32, color, false, 2., 0., 1);
+			}
 		}
-		if (bDraw)
-		{
-			DrawDebugLine(GetWorld(), OwnerLocation, EndLocation, color, false, 3.f, 0, 1.5f);
-		}
+	}
+	if (bDraw)
+	{
+		DrawDebugLine(GetWorld(), OwnerLocation, EndLocation, color, false, 3.f, 0, 1.5f);
 	}
 }
 

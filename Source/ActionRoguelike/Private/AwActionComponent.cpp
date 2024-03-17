@@ -10,7 +10,7 @@ UAwActionComponent::UAwActionComponent()
 {
 	// Set this component to be initialized when the game starts, and to be ticked every frame.  You can turn these features
 	// off to improve performance if you don't need them.
-	PrimaryComponentTick.bCanEverTick = false;
+	PrimaryComponentTick.bCanEverTick = true;
 
 	// ...
 }
@@ -38,8 +38,8 @@ bool UAwActionComponent::AddAction(TSubclassOf<UAwAction> ActionClass)
 	// 	UE_LOGFMT(LogGame, Warning, "Client attempting to AddAction. [Class: {Class}]", GetNameSafe(ActionClass));
 	// 	return false;
 	// }
-	AActor* Player = GetOwner();
-	UAwAction* Action =  NewObject<UAwAction>(Player,ActionClass);
+	
+	UAwAction* Action =  NewObject<UAwAction>(this,ActionClass);
 	if(ensure(Action))
 	{
 		if(Actions.Add(Action) >=0)
@@ -53,7 +53,14 @@ void UAwActionComponent::StartActionByName(AActor* Instigator, FName ActionName)
 	for(UAwAction *Action:Actions)
 	{
 		if(Action && Action->GetActionName()  == ActionName)
+		{
+			if(!Action->CheckActionAvailable(Instigator))
+			{
+				continue;
+			}
 			Action->StartAction(Instigator);
+		}
+			
 	}
 }
 
@@ -62,7 +69,10 @@ void UAwActionComponent::StopActionByName(AActor* Instigator, FName ActionName)
 	for(UAwAction *Action:Actions)
 	{
 		if(Action && Action->GetActionName() ==ActionName)
-			Action->StopAction(Instigator);
+		{
+				Action->StopAction(Instigator);
+		}
+			
 	}
 }
 
@@ -72,6 +82,14 @@ void UAwActionComponent::TickComponent(float DeltaTime, ELevelTick TickType, FAc
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
-	// ...
+	// Debug Code
+	if(ActiveGameplayTags.Num() != 0)
+	{
+		FString DebugMsg = GetNameSafe(GetOwner()) + ": " +  ActiveGameplayTags.ToStringSimple();
+		FString DebugMsg2 = GetNameSafe(GetOwner()) + ": " +  BlockGamePlayTags.ToStringSimple();
+		GEngine->AddOnScreenDebugMessage(-1,0.f,FColor::Black,DebugMsg);
+		GEngine->AddOnScreenDebugMessage(-1,0.f,FColor::White,DebugMsg2);
+	}
+	
 }
 

@@ -36,4 +36,6 @@ public:
 	bool RemoveScores(int32 v);
 	UPROPERTY(BlueprintAssignable,Category="Event")
 	FOnPlayerStateChange StateChangeEvent;
+
+	AAWPlayerState();
 };

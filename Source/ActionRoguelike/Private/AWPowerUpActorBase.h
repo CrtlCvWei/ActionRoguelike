@@ -21,6 +21,7 @@ public:
 	AAWPowerUpActorBase();
 
 protected:
+	
 	UPROPERTY(EditAnywhere,Blueprintable)
 	bool visible;
 	UPROPERTY(EditAnywhere,Blueprintable)

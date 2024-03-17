@@ -16,6 +16,7 @@ void UAwWorldUserWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTi
 	ACharacter* MyCharacter = Cast<ACharacter>(AttachActor);
 	if(UGameplayStatics::ProjectWorldToScreen(GetOwningPlayer(),MyCharacter->GetMesh()->GetSocketLocation(SocketName),ScreenLocation))
 	{
+		// Adjust 
 		float Scale = UWidgetLayoutLibrary::GetViewportScale(this);
 		if(Scale)
 		{

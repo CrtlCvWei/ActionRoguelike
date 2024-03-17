@@ -15,6 +15,8 @@ class UAWAttributeComp;
 class UAnimMontage;
 
 
+// 委托多播
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FClimingUpSignature, FVector, ImpactPoint);
 
 UCLASS()
 class ACTIONROGUELIKE_API AAwCharacter : public ACharacter
@@ -29,7 +31,9 @@ private:
 	const float NormalMoveSpeed = 400.f;
 	const float GravityScale = 2.5f;
 	const float BrakingFriction = 1.f;
-	const float BrakingDecelerationWalking = 512.f;
+	const float BrakingDecelerationWalking = 10.f;
+	const float ClimbVectorZ = 170.f;
+	const float ClimbVectorX = 100.f;
 	
 	UFUNCTION()
 	void Init_Paramters();
@@ -37,18 +41,18 @@ private:
 	UFUNCTION()
 	virtual void Init_BeginPlay();
 
-protected:
-
-	UPROPERTY(EditAnywhere,Category = "Attack")
-	TSubclassOf<AActor> BlackHoleClass;
-	UPROPERTY(EditAnywhere,Category = "Attack")
-	UAnimMontage* AttackAni;
-
 public:
 	// Sets default values for this character's properties
 	AAwCharacter();
 
 protected:
+	
+	UPROPERTY()
+	UArrowComponent* ArrowComp;
+	
+	UPROPERTY()
+	bool bIsClimbing;
+	
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
@@ -67,26 +71,25 @@ protected:
 
 	UPROPERTY(VisibleAnywhere,BlueprintReadOnly,Category="Components")
 	UAwActionComponent* ActionComp;;
+
+	UPROPERTY(EditAnywhere,BlueprintReadOnly,Category="ClimbAndVault")
+	FName RightKneeSocketName;
 	
-		
-	//Sets Character Movement Speed to Sprint values.
-	void BeginSprint();
-
-	//Sets Character Movement Speed back to default speed values.
-	void EndSprint();
-
 	
 	//Basic Actions
 	void MoveForward(float Values);
 	void MoveRight(float Values);
 	virtual void Jump() override;
+	virtual void ClearJumpInput(float DeltaTime) override;
 	virtual void StopJumping() override;
 	//Attack Action
-	FRotator GetProjectileRotation(FVector HandLocation);
-	void SpawnProjectile(TSubclassOf<AActor> ClassToSpawn);
+	
 	void PrimaryAttack();
 	void BlackHoleAbility();
-	void BlackHoleAbility_TimeElasped();
+	void BeginSprint();
+	void EndSprint();
+	
+	
 	//Interact
 	void PrimaryInterat();
 	FVector GetPawnViewLocation() const override;
@@ -104,20 +107,57 @@ protected:
 
 	FTimerHandle JumpTimerHandle; // 创建一个FTimerHandle对象
 	FTimerHandle ProjectileSpawnHandle;//
-	void UpdateJumpKeyHoldTime();
 
+
+	// trace detection
+
+	UPROPERTY(BlueprintAssignable)
+	FClimingUpSignature ClimbingUp;
+	
+	UPROPERTY(EditAnywhere,Category="ClimbAndVault")
+	UAnimMontage* ClimbStartMontage;
+
+	UPROPERTY(EditAnywhere,Category="ClimbAndVault")
+	UAnimMontage* ClimbUpMontage;
+
+	UFUNCTION(BlueprintCallable)
+	void ClimbingTick();
+	
+	FRotator ClimbRotator = FRotator::ZeroRotator;
+	bool DetectWall();
+	FRotator FindClimbRotation(const FVector StartLoca,const FVector EndLoca, FVector ObstacleNormalVec); 
+	
+	
+	UFUNCTION(BlueprintCallable)
+	void SwitchToClimbingMode();
+	UFUNCTION(BlueprintCallable)
+	void RidOffClimbingMode();
+	UFUNCTION()
+	void MoveForwardWhenClimbing(float Values);
+	UFUNCTION()
+	void MoveRightWhenClimbing(float Values);
+	UFUNCTION()
+	bool DetectAndClimbUp();
+	
 	//
 	UFUNCTION()
 	void OnHealthChange(AActor* InstigatorActor, UAWAttributeComp* AttributeComponent, float NewHealth, float Change);
 
 	UFUNCTION(Exec)
 	void HealSelf(float v = 100);
+
+
+	
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
+	UFUNCTION(BlueprintCallable)
+	bool GetIsClimbing() const { return bIsClimbing; }
+	
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
 	virtual void PostInitializeComponents() override;
+	
 };

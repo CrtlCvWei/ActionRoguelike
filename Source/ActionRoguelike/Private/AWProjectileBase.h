@@ -54,13 +54,21 @@ protected:
 	UPROPERTY(VisibleAnywhere, Category="Sound")
 	UAudioComponent* VanishAudio;
 
-	UFUNCTION(Blueprintable)
-	virtual void OnComponentHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp,
+	UFUNCTION(Blueprintable,BlueprintNativeEvent)
+	void OnComponentHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp,
 	                            FVector NormalImpluse, const FHitResult& Hit);
-	UFUNCTION(Blueprintable)
-	virtual void OnBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp,
+	UFUNCTION(Blueprintable,BlueprintNativeEvent)
+	void OnBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp,
 	                    int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
-	
+
+	UFUNCTION()
+	virtual  void OnComponentHit_Implementation(UPrimitiveComponent* HitComp, AActor* OtherActor,
+													UPrimitiveComponent* OtherComp, FVector NormalImpluse,
+													const FHitResult& Hit);
+	UFUNCTION()
+	virtual  void OnBeginOverlap_Implementation(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
+													UPrimitiveComponent* OtherComp, int32 OtherBodyIndex,
+													bool bFromSweep, const FHitResult& SweepResult);
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 	UFUNCTION(Blueprintable, BlueprintCallable)

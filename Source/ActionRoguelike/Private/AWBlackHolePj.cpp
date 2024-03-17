@@ -10,7 +10,7 @@
 #include "Kismet/GameplayStatics.h"
 
 
-void AAWBlackHolePj::OnBeginOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
+void AAWBlackHolePj::OnBeginOverlap_Implementation(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
                                         UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep,
                                         const FHitResult& SweepResult)
 {
@@ -33,21 +33,17 @@ void AAWBlackHolePj::OnBeginOverlap(UPrimitiveComponent* OverlappedComp, AActor*
 				}
 				else
 				{
-					// cause damage
-					UAWAttributeComp* Attribute = Cast<UAWAttributeComp>(
-						OtherActor->GetComponentByClass(UAWAttributeComp::StaticClass()));
-					if (Attribute)
-						Attribute->SetHealth(-damage, this->GetInstigator());
+
 				}
 			}
 		}
 	}
 }
 
-void AAWBlackHolePj::PerformAttraction()
+void AAWBlackHolePj::PerformAttraction() const
 {
 	/*持续不断吸引周遭物体*/
-	// 施加径向力
+	// 施加径向冲量
 	RForce->SetWorldLocation(GetActorLocation());
 	RForce->FireImpulse();
 }
@@ -61,7 +57,7 @@ void AAWBlackHolePj::AttractionInterval()
 AAWBlackHolePj::AAWBlackHolePj()
 {
 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
-	PrimaryActorTick.bCanEverTick = true;
+	PrimaryActorTick.bCanEverTick = false;
 	this->AAWBlackHolePj::Init_Paramters();
 }
 
@@ -87,7 +83,7 @@ void AAWBlackHolePj::Explode()
 void AAWBlackHolePj::PostInitializeComponents()
 {
 	Super::PostInitializeComponents();
-	this->SphereComp->OnComponentBeginOverlap.AddDynamic(this, &AAWBlackHolePj::OnBeginOverlap);
+	this->SphereComp->OnComponentBeginOverlap.AddDynamic(this, &AAWBlackHolePj::OnBeginOverlap_Implementation);
 }
 
 // Called when the game starts or when spawned
@@ -95,6 +91,29 @@ void AAWBlackHolePj::BeginPlay()
 {
 	Super::BeginPlay();
 }
+
+void AAWBlackHolePj::SetAttractionRange(const float v)
+{
+	AttractionRange = v;
+}
+
+void AAWBlackHolePj::SetAttractionStrength(const float v)
+{
+	AttractionStrength = v;
+}
+
+void AAWBlackHolePj::SetInitSpeed(const float v)
+{
+	InitialSpeed = v;
+	MoveComp->InitialSpeed = v;
+}
+
+void AAWBlackHolePj::SetGravityScale(const float v)
+{
+	ProjectileGravityScale = v;
+	MoveComp->ProjectileGravityScale = v;
+}
+
 
 // Called every frame
 void AAWBlackHolePj::Tick(float DeltaTime)

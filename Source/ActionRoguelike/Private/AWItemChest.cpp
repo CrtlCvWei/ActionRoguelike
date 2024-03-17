@@ -21,12 +21,19 @@ void AAWItemChest::Init_Paramters()
 	this->bUsed = false;
 }
 
+void AAWItemChest::InvisTips()
+{
+	if(TipsWidget)
+	{
+		TipsWidget->SetVisibility(ESlateVisibility::Hidden);
+	}
+}
+
 // Sets default values
 AAWItemChest::AAWItemChest()
 {
  	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
-
 	Init_Paramters();
 
 }
@@ -40,6 +47,20 @@ void AAWItemChest::Interact_Implementation(APawn* InstigorPawn)
 {
 	if (bLock)
 	{
+		//
+		if(!TipsWidget)
+		{
+			// TipsWidget = UAwWorldTipsWidget::CreateCustomWidget(this, FVector(0, 0, 100));
+			TipsWidget = CreateWidget<UAwWorldTipsWidget>(GetWorld(), TipsWidgetClass);
+			TipsWidget->SetAttachActor(this);
+			TipsWidget->SetOffset(FVector(0, 0, 100));
+			TipsWidget->SetText(FText::FromString("This chest is locked"));
+		}
+		TipsWidget->SetVisibility(ESlateVisibility::Visible);
+		TipsWidget->AddToViewport();
+		// 5s后隐藏
+		FTimerHandle UIManager;
+		GetWorld()->GetTimerManager().SetTimer(UIManager, this, &AAWItemChest::InvisTips, 5.f, false);
 		return;
 	}
 	if(!bUsed)

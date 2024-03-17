@@ -49,5 +49,5 @@ public:
 	void ActorBeenKilled(AActor* Death,AActor* Killer,UAWReward* Reward);
 	
 	AAWGameModeBase();
-	virtual  void StartPlay() override;
+	virtual void StartPlay() override;
 };

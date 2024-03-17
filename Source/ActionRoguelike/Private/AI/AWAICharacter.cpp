@@ -49,6 +49,7 @@ void AAWAICharacter::PostInitializeComponents()
 	if (ensure(this->SensingComp))
 	{
 		SensingComp->OnSeePawn.AddDynamic(this, &AAWAICharacter::OnPawnSeen);
+		
 	}
 }
 
@@ -60,37 +61,18 @@ void AAWAICharacter::OnHealthChange(AActor* InstigatorActor, UAWAttributeComp* A
 	{
 		if (!AttributeComp->isAlive())
 		{
-			AAIController* AIC = Cast<AAIController>(this->GetController());
-			if (AIC)
+			AAIController* AaiController = Cast<AAIController>(this->GetController());
+			if (AaiController)
 			{
 				// Stop the behavior tree and give reason
-				AIC->GetBrainComponent()->StopLogic("Killed");
+				AaiController->GetBrainComponent()->StopLogic("Killed");
 			}
 
 			// ragdoll
 			GetMesh()->SetAllBodiesSimulatePhysics(true);
 			GetMesh()->SetCollisionProfileName("Ragdoll");
-
-			if (this->RewardComp)
-			{
-				RewardComp->GiveRewards.Broadcast(this, InstigatorActor, RewardComp->GetScore());
-			}
-			// AAIController* AIController = Cast<AAIController>(GetController());
-			// if (AIController)
-			// {
-			// 	// AIController->DisableInput(nullptr);
-			// 	USkeletalMeshComponent* SkeletalMeshComponent = GetMesh();
-			//
-			// 	// 启用物理模拟
-			// 	if (SkeletalMeshComponent)
-			// 	{
-			// 		SkeletalMeshComponent->SetSimulatePhysics(true);
-			// 		if(SkeletalMeshComponent->IsAnySimulatingPhysics())
-			// 			DrawDebugString(GetWorld(),GetActorLocation(),TEXT("SimulatePhysics!"),this,FColor::Red,2.f);
-			// 	}
-			// }
-
-
+			
+			
 			DetachFromControllerPendingDestroy();
 			FTimerHandle DeadTimer;
 			GetWorld()->GetTimerManager().SetTimer(DeadTimer, [this]() { this->Destroy(); }, 5.f, false);

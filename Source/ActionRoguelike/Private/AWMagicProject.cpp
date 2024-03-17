@@ -54,8 +54,6 @@ void AAWMagicProject::OnComponentHit_Implementation(UPrimitiveComponent* HitComp
 			if (VanishAudio && VanishAudio->Sound)
 				VanishAudio->Play();
 		}
-
-
 	}
 }
 
@@ -71,10 +69,7 @@ void AAWMagicProject::OnBeginOverlap_Implementation(UPrimitiveComponent* Overlap
 		//check if null
 		if (Attribute)
 		{
-			Attribute->SetHealth(-20,this->GetInstigator());
-			// FString CombineText = FString::Printf(
-			// 	TEXT("Hit at here:%s and cost damage -20"), *SweepResult.ImpactPoint.ToString());
-			// DrawDebugString(GetWorld(), SweepResult.ImpactPoint, CombineText, nullptr, FColor::Red, 1.0f, true);
+			Attribute->SetHealth(-20, this->GetInstigator());
 			if (this->Destroy())
 			{
 				if (VanishAudio && VanishAudio->Sound)
@@ -83,6 +78,7 @@ void AAWMagicProject::OnBeginOverlap_Implementation(UPrimitiveComponent* Overlap
 		}
 	}
 }
+
 
 void AAWMagicProject::PostInitializeComponents()
 {

@@ -5,6 +5,7 @@
 
 #include "CoreMinimal.h"
 #include "AWGameplayInterface.h"
+#include "AwWorldTipsWidget.h"
 #include "AWItemChest.generated.h"
 
 UCLASS()
@@ -27,18 +28,30 @@ protected:
 	UPROPERTY(VisibleAnywhere,BlueprintReadOnly)
 	UStaticMeshComponent* PileMesh;
 
+
+	UPROPERTY(EditDefaultsOnly,Category="UI")
+	TSubclassOf<UUserWidget> TipsWidgetClass;
+
+	UPROPERTY()
+	UAwWorldTipsWidget* TipsWidget;
+	
 	UFUNCTION(BlueprintCallable)
 	void Unlock();
 	UFUNCTION(BlueprintCallable)
 	bool getLock(){return this->bLock;}
-	
+
+	UFUNCTION()
 	void Interact_Implementation(APawn* InstigorPawn) override;
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
+
 public:
 	UPROPERTY(EditAnywhere)
 	float TargetPitch;
+
+	UFUNCTION(BlueprintCallable)
+	void InvisTips();
 	
 	// Sets default values for this character's properties
 	AAWItemChest();

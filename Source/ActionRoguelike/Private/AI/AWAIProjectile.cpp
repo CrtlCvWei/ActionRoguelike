@@ -23,7 +23,7 @@ void AAWAIProjectile::Init_Paramters()
 }
 
 void AAWAIProjectile::OnBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
-                                     UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
 	if (OtherActor && OtherActor != this->GetInstigator())
 	{
@@ -55,7 +55,42 @@ void AAWAIProjectile::OnBeginOverlap(UPrimitiveComponent* OverlappedComponent, A
 	}
 }
 
-void AAWAIProjectile::OnComponentHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp,
+void AAWAIProjectile::OnBeginOverlap_Implementation(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
+                                                    UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+{
+	if (OtherActor && OtherActor != this->GetInstigator())
+	{
+		UAWAttributeComp* Attribute = Cast<UAWAttributeComp>(
+			OtherActor->GetComponentByClass(UAWAttributeComp::StaticClass()));
+		//check if null
+		if (Attribute)
+		{
+			float autral_damage = -this->damage;
+			float God_test = CVarTurnAIProjectileDamage.GetValueOnGameThread();
+			autral_damage *= God_test;
+			
+			Attribute->SetHealth( autral_damage, this->GetInstigator());
+
+			bool bDebug = CVarDebugVisulizeAIProjectileDamage.GetValueOnGameThread();
+			if(bDebug)
+			{
+				FString CombineText = FString::Printf(
+				TEXT("Hit at here:%s and cost damage %f"), *SweepResult.ImpactPoint.ToString(), autral_damage);
+				DrawDebugString(GetWorld(), SweepResult.ImpactPoint, CombineText, nullptr, FColor::Red, 1.0f, true);
+			}
+			
+			if (this->Destroy())
+			{
+				if (VanishAudio && VanishAudio->Sound)
+					VanishAudio->Play();
+			}
+		}
+	}
+}
+
+
+
+void AAWAIProjectile::OnComponentHit_Implementation(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp,
 	FVector NormalImpluse, const FHitResult& Hit)
 {
 	if (OtherActor && Cast<APawn>(OtherActor) != this->GetInstigator())
@@ -79,8 +114,9 @@ void AAWAIProjectile::OnComponentHit(UPrimitiveComponent* HitComp, AActor* Other
 void AAWAIProjectile::PostInitializeComponents()
 {
 	Super::PostInitializeComponents();
-	this->SphereComp->OnComponentHit.AddDynamic(this, &AAWAIProjectile::OnComponentHit);
-	this->SphereComp->OnComponentBeginOverlap.AddDynamic(this, &AAWAIProjectile::OnBeginOverlap);
+	this->SphereComp->OnComponentHit.AddDynamic(this, &AAWAIProjectile::OnComponentHit_Implementation);
+	this->SphereComp->OnComponentBeginOverlap.AddDynamic(this, &AAWAIProjectile::OnBeginOverlap_Implementation);
+	// this->SphereComp->OnComponentBeginOverlap.AddDynamic(this, &AAWAIProjectile::OnBeginOverlap);
 }
 
 AAWAIProjectile::AAWAIProjectile()

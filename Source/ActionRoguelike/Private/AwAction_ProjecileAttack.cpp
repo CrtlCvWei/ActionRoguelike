@@ -4,16 +4,34 @@
 #include "AwAction_ProjecileAttack.h"
 
 #include "AwCharacter.h"
+#include "GameFramework/CharacterMovementComponent.h"
 
 
 void UAwAction_ProjecileAttack::StartAction_Implementation(AActor* Instigator)
 {
 	Super::StartAction_Implementation(Instigator);
 	//
-	if (ensure(this->ProjuctileClass) && ensure(AttackAni))
+	
+	if (ensure(this->ProjectileClass) && ensure(AttackAni))
 	{
 		// Attac Animation
 		AAwCharacter* Player = Cast<AAwCharacter>(Instigator);
+		if(Player->GetIsClimbing() || Player->GetCharacterMovement()->IsFalling())
+		{
+			StopAction_Implementation(Instigator);
+			return;
+		}
+		if(Player->GetVelocity() == FVector::ZeroVector)
+		{
+			FVector CameraLocation;
+			FRotator CameraRotation;
+			Player->GetController()->GetPlayerViewPoint(CameraLocation,CameraRotation); // Get the camera location and rotation
+			// Turn Player to the camera direction
+			if(!Player->GetIsClimbing())
+				Player->SetActorRotation(FRotator(0.f,CameraRotation.Yaw,0.f));
+
+		}
+
 		Player->PlayAnimMontage(AttackAni, 1.);
 		FTimerHandle ProjectileSpawnHandle;
 		FTimerDelegate Delegate;
@@ -28,7 +46,7 @@ void UAwAction_ProjecileAttack::StartAction_Implementation(AActor* Instigator)
 
 void UAwAction_ProjecileAttack::StartActionTimeEnasped(ACharacter* Instigator)
 {
-	if (ensureAlways(ProjuctileClass))
+	if (ensureAlways(ProjectileClass))
 	{
 		const FVector HandLocation = Instigator->GetMesh()->GetSocketLocation(HandSpawnSocketName);
 		const FRotator ProjectileRotation = this->GetProjectileRotation(Instigator,HandLocation);
@@ -39,7 +57,7 @@ void UAwAction_ProjecileAttack::StartActionTimeEnasped(ACharacter* Instigator)
 		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 		SpawnParams.Instigator = Instigator;
 		// Spawn the projectile (Magic balls or any other things...)
-		GetWorld()->SpawnActor<AActor>(ProjuctileClass, LocaTM, SpawnParams);
+		GetWorld()->SpawnActor<AActor>(ProjectileClass, LocaTM, SpawnParams);
 	}
 	StopAction_Implementation(Instigator);
 }

@@ -8,7 +8,8 @@ public class ActionRoguelike : ModuleRules
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 	
-		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore" ,"Niagara","AIModule","GameplayTasks","UMG"});
+		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore" ,"Niagara","AIModule","GameplayTasks",
+			"UMG","GameplayAbilities","GameplayTags","SlateCore"});
 
 		PrivateDependencyModuleNames.AddRange(new string[] {  });
 

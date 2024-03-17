@@ -15,7 +15,7 @@ UAWAttributeComp::UAWAttributeComp()
 	Health = 100.f;
 }
 
-bool UAWAttributeComp::SetHealth(float v, AActor* Source)
+bool UAWAttributeComp::SetHealth(float v, AActor* Sourcer)
 {
 	if (v != 0.f && Health > 0)
 	{
@@ -23,7 +23,7 @@ bool UAWAttributeComp::SetHealth(float v, AActor* Source)
 		Health = Health > 100 ? 100 : Health;
 		Health = Health < 0 ? 0 : Health;
 		// trigger the event!
-		OnHealthChange.Broadcast(Source, this, Health, v);
+		OnHealthChange.Broadcast(Sourcer, this, Health, v);
 		if (Health == 0)
 		{
 			AAWGameModeBase* GameMode = GetWorld()->GetAuthGameMode<AAWGameModeBase>();
@@ -33,13 +33,13 @@ bool UAWAttributeComp::SetHealth(float v, AActor* Source)
 				UAWReward* Rewards = Cast<UAWReward>(Owner->GetComponentByClass(UAWReward::StaticClass()));
 				if (Rewards)
 				{
-					//Player has not Reward Comp
-					GameMode->ActorBeenKilled(Owner, Source, Rewards);
+					//Player has  Reward Comp
+					GameMode->ActorBeenKilled(Owner, Sourcer, Rewards);
 				}
 				else
 				{
 					//Player has not Reward Comp
-					GameMode->ActorBeenKilled(Owner, Source, nullptr);
+					GameMode->ActorBeenKilled(Owner, Sourcer, nullptr);
 				}
 			}
 		}

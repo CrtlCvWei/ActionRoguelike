@@ -25,7 +25,7 @@ protected:
 	float Health;
 public:
 	UFUNCTION(BlueprintCallable)
-	bool SetHealth(float v, AActor* Source);
+	bool SetHealth(float v, AActor* Sourcer);
 
 	UFUNCTION(BlueprintCallable)
 	bool isAlive() const;

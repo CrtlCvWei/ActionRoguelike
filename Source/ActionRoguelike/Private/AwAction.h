@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "GameplayTagContainer.h"
 #include "UObject/NoExportTypes.h"
 #include "AwAction.generated.h"
 
@@ -16,8 +17,17 @@ class UAwAction : public UObject
 protected:
 	UPROPERTY(EditAnywhere,Category="Name")
 	FName ActionName;
+
+	UPROPERTY(EditAnywhere,Category="Tags")
+	FGameplayTagContainer GrandTags;
+	UPROPERTY(EditAnywhere,Category="Tags")
+	FGameplayTagContainer BlockTags;
 	
 public:
+
+	UFUNCTION(Blueprintable,Category = "Action")
+	UAwActionComponent* GetOwningComponent() const;
+	
 	UFUNCTION(BlueprintNativeEvent,Category="Action")
 	void StartAction(AActor* Instigator);
 
@@ -27,4 +37,7 @@ public:
 	FName GetActionName () const;
 
 	UWorld* GetWorld() const override;
+
+	UFUNCTION()
+	bool CheckActionAvailable(AActor* Instigator) const;
 };

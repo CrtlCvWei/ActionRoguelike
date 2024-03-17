@@ -66,3 +66,7 @@ bool AAWPlayerState::RemoveScores(int32 v)
 	StateChangeEvent.Broadcast(Cast<AAwCharacter>(GetOwner()),1,Scores,v);
 	return true;
 }
+
+AAWPlayerState::AAWPlayerState()
+{
+}

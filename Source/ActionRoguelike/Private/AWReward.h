@@ -6,9 +6,6 @@
 #include "Components/ActorComponent.h"
 #include "AWReward.generated.h"
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FGiveRewards, AActor*, DeathActor, AActor*,
-											  Killer, int,Scores);
-
 class UAWAttributeComp;
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
@@ -32,8 +29,7 @@ protected:
 	virtual void BeginPlay() override;
 
 public:
-	UPROPERTY(BlueprintAssignable)
-	FGiveRewards GiveRewards ;
+
 
 	int GetScore() const {return  Score;}
 	void SetScore(const int NewScore){if(bUpdate){Score = NewScore;}}

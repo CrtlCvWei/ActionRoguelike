@@ -15,7 +15,7 @@ class UAwAction_ProjecileAttack : public UAwAction
 	GENERATED_BODY()
 protected:
 	UPROPERTY(EditAnywhere,Category = "Attack")
-	TSubclassOf<AActor> ProjuctileClass;
+	TSubclassOf<AActor> ProjectileClass;
 
 	UPROPERTY(EditAnywhere,Category = "Attack")
 	UAnimMontage* AttackAni;
@@ -39,4 +39,6 @@ public:
 	
 	virtual void  StartAction_Implementation(AActor* Instigator) override;
 	virtual void StopAction_Implementation(AActor* Instigator) override;
+
+
 };

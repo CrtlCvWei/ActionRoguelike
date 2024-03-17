@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "GameplayTagContainer.h"
 #include "Components/ActorComponent.h"
 #include "AwActionComponent.generated.h"
 
@@ -17,7 +18,7 @@ class UAwActionComponent : public UActorComponent
 public:	
 	// Sets default values for this component's properties
 	UAwActionComponent();
-
+	
 protected:
 	UPROPERTY()
 	TArray<UAwAction*> Actions; 
@@ -25,6 +26,11 @@ protected:
 	virtual void BeginPlay() override;
 
 public:
+	UPROPERTY(EditAnywhere,BlueprintReadOnly,Category="Tags")
+	FGameplayTagContainer ActiveGameplayTags;
+
+	UPROPERTY(EditAnywhere,BlueprintReadOnly,Category="Tags")
+	FGameplayTagContainer BlockGamePlayTags;
 	
 	UFUNCTION(BlueprintCallable,Category="Actions")
 	bool AddAction(TSubclassOf<UAwAction> ActionClass);
