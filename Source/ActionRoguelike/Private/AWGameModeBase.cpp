@@ -3,7 +3,7 @@
 
 #include "AWGameModeBase.h"
 
-#include "AWAttributeComp.h"
+#include "..\Public\MyGAS/AWAttributeComp.h"
 #include "AwCharacter.h"
 #include "AWPlayerState.h"
 #include "AWReward.h"

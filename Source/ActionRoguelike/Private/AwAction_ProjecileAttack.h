@@ -30,7 +30,7 @@ protected:
 	float AttackTimeDelay;
 
 	UFUNCTION()
-	void StartActionTimeEnasped(ACharacter* Instigator);
+	void StartActionTimeEnasped(AActor* Instigator);
 	
 	FRotator GetProjectileRotation(ACharacter* Instigator,FVector HandLocation);
 public:

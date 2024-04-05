@@ -3,7 +3,6 @@
 
 #include "AWBlackHolePj.h"
 
-#include "AWAttributeComp.h"
 #include "PhysicsEngine/RadialForceComponent.h"
 #include "Components/SphereComponent.h"
 #include "GameFramework/ProjectileMovementComponent.h"

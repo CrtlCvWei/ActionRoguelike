@@ -23,7 +23,6 @@ protected:
 	UPROPERTY()
 	bool bUpdate = false;
 	
-
 	
 	// Called when the game starts
 	virtual void BeginPlay() override;

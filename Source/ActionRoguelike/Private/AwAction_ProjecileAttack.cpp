@@ -11,58 +11,89 @@ void UAwAction_ProjecileAttack::StartAction_Implementation(AActor* Instigator)
 {
 	Super::StartAction_Implementation(Instigator);
 	//
-	
-	if (ensure(this->ProjectileClass) && ensure(AttackAni))
+
+	if (this->ProjectileClass && AttackAni)
 	{
 		// Attac Animation
 		AAwCharacter* Player = Cast<AAwCharacter>(Instigator);
-		if(Player->GetIsClimbing() || Player->GetCharacterMovement()->IsFalling())
+		if (Player->GetIsClimbing() || Player->GetCharacterMovement()->IsFalling())
 		{
 			StopAction_Implementation(Instigator);
 			return;
 		}
-		if(Player->GetVelocity() == FVector::ZeroVector)
+		if (Player->GetVelocity() == FVector::ZeroVector)
 		{
 			FVector CameraLocation;
 			FRotator CameraRotation;
-			Player->GetController()->GetPlayerViewPoint(CameraLocation,CameraRotation); // Get the camera location and rotation
+			Player->GetController()->GetPlayerViewPoint(CameraLocation, CameraRotation);
+			// Get the camera location and rotation
 			// Turn Player to the camera direction
-			if(!Player->GetIsClimbing())
-				Player->SetActorRotation(FRotator(0.f,CameraRotation.Yaw,0.f));
-
+			if (!Player->GetIsClimbing())
+				Player->SetActorRotation(FRotator(0.f, CameraRotation.Yaw, 0.f));
 		}
 
 		Player->PlayAnimMontage(AttackAni, 1.);
 		FTimerHandle ProjectileSpawnHandle;
 		FTimerDelegate Delegate;
-		Delegate.BindUFunction(this,"StartActionTimeEnasped",Player);
-		if(ensure(GetWorld()))
+		Delegate.BindUFunction(this, "StartActionTimeEnasped", Player);
+		if (ensure(GetWorld()))
 		{
-			GetWorld()->GetTimerManager().SetTimer(ProjectileSpawnHandle,Delegate,0.25f,false);
+			if(AttackTimeDelay > 0.f)
+				GetWorld()->GetTimerManager().SetTimer(ProjectileSpawnHandle, Delegate, AttackTimeDelay, false);
+			else if (AttackTimeDelay == 0.f)
+			{
+				StartActionTimeEnasped(Player);
+			}
 		}
-		
+	}
+	else
+	{
+		FTimerHandle ProjectileSpawnHandle;
+		FTimerDelegate Delegate;
+		Delegate.BindUFunction(this, "StartActionTimeEnasped", Instigator);
+		if (ensure(GetWorld()))
+		{
+			if(AttackTimeDelay > 0.f)
+			GetWorld()->GetTimerManager().SetTimer(ProjectileSpawnHandle, Delegate, AttackTimeDelay, false);
+			else if (AttackTimeDelay == 0.f)
+			{
+				StartActionTimeEnasped(Instigator);
+			}
+		}
 	}
 }
 
-void UAwAction_ProjecileAttack::StartActionTimeEnasped(ACharacter* Instigator)
+void UAwAction_ProjecileAttack::StartActionTimeEnasped(AActor* Instigator)
 {
-	if (ensureAlways(ProjectileClass))
+	FTransform LocaTM;
+	FActorSpawnParameters SpawnParams;
+	if (AAwCharacter* Player = Cast<AAwCharacter>(Instigator))
 	{
-		const FVector HandLocation = Instigator->GetMesh()->GetSocketLocation(HandSpawnSocketName);
-		const FRotator ProjectileRotation = this->GetProjectileRotation(Instigator,HandLocation);
-		FTransform LocaTM = FTransform((FRotator)ProjectileRotation,
-									   (FVector)HandLocation);
-		FActorSpawnParameters SpawnParams;
+		const FVector HandLocation = Player->GetMesh()->GetSocketLocation(HandSpawnSocketName);
+		const FRotator ProjectileRotation = this->GetProjectileRotation(Player, HandLocation);
+		LocaTM = FTransform((FRotator)ProjectileRotation,
+		                    (FVector)HandLocation);
+
 		/** Actor will spawn in desired location, regardless of collisions. */
 		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-		SpawnParams.Instigator = Instigator;
+		SpawnParams.Instigator = Player;
 		// Spawn the projectile (Magic balls or any other things...)
 		GetWorld()->SpawnActor<AActor>(ProjectileClass, LocaTM, SpawnParams);
 	}
+	else
+	{
+		LocaTM = FTransform((FRotator)Instigator->GetActorRotation(),
+		                    (FVector)Instigator->GetActorLocation());
+		/** Actor will spawn in desired location, regardless of collisions. */
+		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+		SpawnParams.Instigator = nullptr;
+	}
+	// Spawn the projectile (Magic balls or any other things...)
+	GetWorld()->SpawnActor<AActor>(ProjectileClass, LocaTM, SpawnParams);
 	StopAction_Implementation(Instigator);
 }
 
-FRotator UAwAction_ProjecileAttack::GetProjectileRotation(ACharacter* Instigator,FVector HandLocation)
+FRotator UAwAction_ProjecileAttack::GetProjectileRotation(ACharacter* Instigator, FVector HandLocation)
 {
 	/* 从摄像机中心进行射线检测，检测视线处是否有可见物体碰撞，根据碰撞情况修正projectile运动姿态、方向*/
 	FVector CameraLocation;
@@ -81,7 +112,7 @@ FRotator UAwAction_ProjecileAttack::GetProjectileRotation(ACharacter* Instigator
 	// 执行射线检测
 	FHitResult HitResult;
 	bool bHit = GetWorld()->LineTraceSingleByChannel(HitResult, CameraLocation, EyeEndLocation, ECC_Visibility,
-													 CollisionParams);
+	                                                 CollisionParams);
 	if (bHit)
 	{
 		// get the hit point
@@ -102,4 +133,3 @@ void UAwAction_ProjecileAttack::StopAction_Implementation(AActor* Instigator)
 {
 	Super::StopAction_Implementation(Instigator);
 }
- 

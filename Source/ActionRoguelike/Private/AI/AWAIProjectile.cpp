@@ -3,7 +3,7 @@
 
 #include "AI/AWAIProjectile.h"
 
-#include "AWAttributeComp.h"
+#include "..\Public\MyGAS/AWAttributeComp.h"
 #include "Components/SphereComponent.h"
 #include "Niagara/Public/NiagaraComponent.h"
 #include "Components/AudioComponent.h"
@@ -25,11 +25,13 @@ void AAWAIProjectile::Init_Paramters()
 void AAWAIProjectile::OnBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
 	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
+	// TODO:
 	if (OtherActor && OtherActor != this->GetInstigator())
 	{
 		UAWAttributeComp* Attribute = Cast<UAWAttributeComp>(
 			OtherActor->GetComponentByClass(UAWAttributeComp::StaticClass()));
 		//check if null
+
 		if (Attribute)
 		{
 			float autral_damage = -this->damage;

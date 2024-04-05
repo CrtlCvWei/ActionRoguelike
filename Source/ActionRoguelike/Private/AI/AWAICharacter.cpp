@@ -5,9 +5,9 @@
 
 #include "AIController.h"
 #include "AWReward.h"
-#include "AWAttributeComp.h"
+#include "..\Public\MyGAS/AWAttributeComp.h"
 #include "AwCharacter.h"
-#include "AwWorldUserWidget.h"
+#include "UI/AwWorldUserWidget.h"
 #include "BrainComponent.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "Blueprint/UserWidget.h"
@@ -71,7 +71,6 @@ void AAWAICharacter::OnHealthChange(AActor* InstigatorActor, UAWAttributeComp* A
 			// ragdoll
 			GetMesh()->SetAllBodiesSimulatePhysics(true);
 			GetMesh()->SetCollisionProfileName("Ragdoll");
-			
 			
 			DetachFromControllerPendingDestroy();
 			FTimerHandle DeadTimer;

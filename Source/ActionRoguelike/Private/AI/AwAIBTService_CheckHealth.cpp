@@ -4,7 +4,7 @@
 #include "AI/AwAIBTService_CheckHealth.h"
 
 #include "AIController.h"
-#include "AWAttributeComp.h"
+#include "..\Public\MyGAS/AWAttributeComp.h"
 #include "AI/AWAICharacter.h"
 #include "BehaviorTree/BlackboardComponent.h"
 

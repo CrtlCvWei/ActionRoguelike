@@ -2,7 +2,7 @@
 
 
 #include "AWHealPoint.h"
-#include "AWAttributeComp.h"
+#include "..\Public\MyGAS/AWAttributeComp.h"
 #include "Components/SphereComponent.h"
 
 // Sets default values

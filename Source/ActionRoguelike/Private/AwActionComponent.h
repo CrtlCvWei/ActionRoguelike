@@ -31,10 +31,16 @@ public:
 
 	UPROPERTY(EditAnywhere,BlueprintReadOnly,Category="Tags")
 	FGameplayTagContainer BlockGamePlayTags;
+
+	UPROPERTY(EditAnywhere,BlueprintReadOnly,Category="Tags")
+	FGameplayTagContainer CoolDownGamePlayTags;
 	
 	UFUNCTION(BlueprintCallable,Category="Actions")
 	bool AddAction(TSubclassOf<UAwAction> ActionClass);
 
+	UFUNCTION(BlueprintCallable,Category="Actions")
+	bool DeleAction(UAwAction* ActionClass);
+	
 	UFUNCTION(BlueprintCallable,Category="Actions")
 	void StartActionByName(AActor* Instigator, FName ActionName);
 	UFUNCTION(BlueprintCallable,Category="Actions")

@@ -35,7 +35,7 @@ protected:
 	UFUNCTION(BlueprintCallable)
 	void WhenActorsHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp,
 	                   FVector NormalImpluse, const FHitResult& Hit);
-
+	
 	UFUNCTION(BlueprintCallable)
 	void Fire(AActor* OtherActor);
 

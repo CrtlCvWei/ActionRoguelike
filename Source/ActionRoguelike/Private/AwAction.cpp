@@ -4,7 +4,6 @@
 #include "AwAction.h"
 #include "AwCharacter.h"
 
-#include "AwActionComponent.h"
 
 void UAwAction::StartAction_Implementation(AActor* Instigator)
 {
@@ -17,6 +16,13 @@ void UAwAction::StartAction_Implementation(AActor* Instigator)
 				Comp->ActiveGameplayTags.AppendTags(this->GrandTags);
 			if (!this->BlockTags.IsEmpty())
 				Comp->BlockGamePlayTags.AppendTags(this->BlockTags);
+			// CoolDowning
+			if(CoolDownTime > 0.f)
+			{
+				Comp->CoolDownGamePlayTags.AddTag(this->ActionTag);
+				// CoolDown Over
+				GetWorld()->GetTimerManager().SetTimer(CoolDownTimerHandle, this, &UAwAction::CoolDownOver, CoolDownTime, false);
+			}
 	}
 	else
 	{
@@ -48,6 +54,13 @@ bool UAwAction::CheckActionAvailable(AActor* Instigator) const
 	UAwActionComponent* Comp = Cast<UAwActionComponent>(GetOuter());
 	if(Comp->ActiveGameplayTags.HasAny(BlockTags))
 	{
+		// debug
+		FString DebugMsg = FString("Cool Down : ") + ": " +  BlockTags.ToStringSimple();
+		GEngine->AddOnScreenDebugMessage(-1,1.f,FColor::Black,DebugMsg);
+		return false;
+	}
+	else if(Comp->CoolDownGamePlayTags.HasTag(ActionTag))
+	{
 		return false;
 	}
 	return  true;
@@ -63,6 +76,16 @@ FName UAwAction::GetActionName() const
 	return this->ActionName;
 }
 
+void UAwAction::CoolDownOver() const
+{
+	UAwActionComponent* Comp = GetOwningComponent();
+	if(ensure(Comp))
+	{
+		Comp->CoolDownGamePlayTags.RemoveTag(this->ActionTag);
+	}
+}
+
+
 UWorld* UAwAction::GetWorld() const
 {
 	AActor* Actor = Cast<AActor>(GetOuter()->GetOuter());
@@ -72,4 +95,9 @@ UWorld* UAwAction::GetWorld() const
 		return Actor->GetWorld();
 	}
 	return nullptr;
+}
+
+FGameplayTag UAwAction::GetActionTag() const
+{
+	return this->ActionTag;
 }

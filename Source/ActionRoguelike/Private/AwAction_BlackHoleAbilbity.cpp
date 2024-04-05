@@ -2,7 +2,7 @@
 
 
 #include "AwAction_BlackHoleAbilbity.h"
-#include "AWAttributeComp.h"
+#include "..\Public\MyGAS/AWAttributeComp.h"
 #include "AwActionComponent.h"
 #include "AWBlackHolePj.h"
 #include "GameFramework/CharacterMovementComponent.h"

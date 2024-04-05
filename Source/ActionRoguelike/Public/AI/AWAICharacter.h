@@ -39,7 +39,7 @@ protected:
 	UAwWorldUserWidget* AIHealthBar;
 	
 	UFUNCTION()
-	virtual void  OnHealthChange(AActor* InstigatorActor, UAWAttributeComp* AttributeComponent, float NewHealth, float Change);
+	virtual void OnHealthChange(AActor* InstigatorActor, UAWAttributeComp* AttributeComponent, float NewHealth, float Change);
 
 	UFUNCTION()
 	void SetTarget(APawn* SeenPawn);
@@ -54,5 +54,4 @@ public:
 
 	virtual void PostInitializeComponents() override;
 	
-
 };

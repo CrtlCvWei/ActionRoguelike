@@ -5,7 +5,7 @@
 
 #include "CoreMinimal.h"
 #include "AWGameplayInterface.h"
-#include "AwWorldTipsWidget.h"
+#include "UI/AwWorldTipsWidget.h"
 #include "AWItemChest.generated.h"
 
 UCLASS()

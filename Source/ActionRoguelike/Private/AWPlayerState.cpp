@@ -67,6 +67,14 @@ bool AAWPlayerState::RemoveScores(int32 v)
 	return true;
 }
 
+
+UAWAttributeComp* AAWPlayerState::GetPlayerAttribute() const
+{
+	return PlayerAttribute;
+}
+
 AAWPlayerState::AAWPlayerState()
 {
+	PlayerAttribute = CreateDefaultSubobject<UAWAttributeComp>(TEXT("PlayerAttribute"));
+	PlayerAttribute->GetAttributeSet()->SetOwningActor();
 }

@@ -48,6 +48,20 @@ bool UAwActionComponent::AddAction(TSubclassOf<UAwAction> ActionClass)
 	return false;
 }
 
+bool UAwActionComponent::DeleAction(UAwAction* ActionClass)
+{
+	if(!ensure(ActionClass))
+	{
+		return false;
+	}
+	if(Actions.Num() == 0 || Actions.Find(ActionClass) == INDEX_NONE)
+	{
+		return false;
+	}
+	Actions.Remove(ActionClass);
+	return true;
+}
+
 void UAwActionComponent::StartActionByName(AActor* Instigator, FName ActionName)
 {
 	for(UAwAction *Action:Actions)

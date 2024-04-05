@@ -3,9 +3,11 @@
 
 #include "AWMagicProject.h"
 
-#include "AWAttributeComp.h"
+#include "AwCharacter.h"
+#include "AWPlayerState.h"
+#include "..\Public\MyGAS/AWAttributeComp.h"
 #include "Components/AudioComponent.h"
-#include "Particles/ParticleSystemComponent.h"
+
 
 // Sets default values
 AAWMagicProject::AAWMagicProject()
@@ -17,28 +19,6 @@ AAWMagicProject::AAWMagicProject()
 
 void AAWMagicProject::Init_Paramters()
 {
-	SphereComp = CreateDefaultSubobject<USphereComponent>("SphereComp");
-	MoveComp = CreateDefaultSubobject<UProjectileMovementComponent>("MoveComp");
-	NiagaraComp = CreateDefaultSubobject<UNiagaraComponent>("NiagaraComp");
-	VanishAudio = CreateDefaultSubobject<UAudioComponent>("VanishAudio");
-	//
-	RootComponent = SphereComp;
-	NiagaraComp->SetupAttachment(SphereComp);
-	VanishAudio->SetupAttachment(SphereComp);
-	SphereComp->SetCollisionObjectType(ECC_WorldDynamic);
-	SphereComp->SetCollisionProfileName("Projectile");
-	SphereComp->SetCollisionResponseToAllChannels(ECR_Block);
-	SphereComp->SetCollisionResponseToChannel(ECC_Camera, ECR_Ignore);
-	SphereComp->SetCollisionResponseToChannel(ECC_Visibility, ECR_Ignore);
-	SphereComp->SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore);
-
-
-	MoveComp->InitialSpeed = this->InitialSpeed;
-	//物体将会根据其速度方向自动旋转，以使其面朝移动方向
-	MoveComp->bRotationFollowsVelocity = true;
-	//物体的初始速度将相对于其自身的本地坐标系
-	MoveComp->bInitialVelocityInLocalSpace = true;
-	MoveComp->ProjectileGravityScale = this->ProjectileGravityScale;
 }
 
 
@@ -64,16 +44,33 @@ void AAWMagicProject::OnBeginOverlap_Implementation(UPrimitiveComponent* Overlap
 {
 	if (OtherActor && OtherActor != this->GetInstigator())
 	{
-		UAWAttributeComp* Attribute = Cast<UAWAttributeComp>(
-			OtherActor->GetComponentByClass(UAWAttributeComp::StaticClass()));
-		//check if null
-		if (Attribute)
+		if (AAwCharacter* Player = Cast<AAwCharacter>(OtherActor))
 		{
-			Attribute->SetHealth(-20, this->GetInstigator());
-			if (this->Destroy())
+			// Player Attribute is in PlayerState
+			APlayerController* PC = Cast<APlayerController>(Player->GetController());
+			AAWPlayerState* AwPS = Cast<AAWPlayerState>(PC->PlayerState);
+			UAWAttributeComp* Attribute = AwPS->GetPlayerAttribute();
+			if (Attribute->SetHealth(-20, this->GetInstigator()))
 			{
-				if (VanishAudio && VanishAudio->Sound)
-					VanishAudio->Play();
+				if (this->Destroy())
+				{
+					if (VanishAudio && VanishAudio->Sound)
+						VanishAudio->Play();
+				}
+				
+			}
+		}
+		else
+		{
+			// AI
+			UAWAttributeComp* Attribute = OtherActor->FindComponentByClass<UAWAttributeComp>();
+			if (Attribute->SetHealth(-20, this->GetInstigator()))
+			{
+				if (this->Destroy())
+				{
+					if (VanishAudio && VanishAudio->Sound)
+						VanishAudio->Play();
+				}
 			}
 		}
 	}

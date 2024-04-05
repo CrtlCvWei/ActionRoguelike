@@ -3,11 +3,11 @@
 
 #include "AwCharacter.h"
 
-#include <string>
 
 #include "AwActionComponent.h"
-#include "AWAttributeComp.h"
-#include "AWGameplayInterface.h"
+#include "AWGameModeBase.h"
+#include "AWPlayerState.h"
+#include "..\Public\MyGAS/AWAttributeComp.h"
 #include "Camera/CameraComponent.h"
 #include "Components/ArrowComponent.h"
 #include "Components/CapsuleComponent.h"
@@ -16,6 +16,7 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "Kismet/KismetSystemLibrary.h"
+#include "UI/AwHUD.h"
 
 
 // Sets default values
@@ -23,16 +24,24 @@ AAwCharacter::AAwCharacter()
 {
 	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
-	Init_Paramters();
+	Init_Paramters(); 
 }
 
 void AAwCharacter::PostInitializeComponents()
 {
 	Super::PostInitializeComponents();
-	if (ensure(this->AttributeComp))
-	{
-		AttributeComp->OnHealthChange.AddDynamic(this, &AAwCharacter::OnHealthChange);
-	}
+}
+
+UAWAttributeComp* AAwCharacter::GetOwningAttribute() const
+{
+	APlayerController* PC = Cast<APlayerController>(GetController());
+	if(!ensure(PC))
+		return nullptr;
+	AAWPlayerState* PS = PC->GetPlayerState<AAWPlayerState>();
+	if(!ensure(PS))
+		return  nullptr;
+	UAWAttributeComp* AttributeComp = PS->GetPlayerAttribute();
+	return AttributeComp;
 }
 
 void AAwCharacter::Init_Paramters()
@@ -58,8 +67,7 @@ void AAwCharacter::Init_Paramters()
 
 	// INPUT 'F' to interact
 	InteractionComp = CreateDefaultSubobject<UAWInteractionComponent>("InteractionComp");
-	// Attributes
-	AttributeComp = CreateDefaultSubobject<UAWAttributeComp>("AttributeComp");
+	
 
 	// Actions
 	ActionComp = CreateDefaultSubobject<UAwActionComponent>("ActionComp");
@@ -77,13 +85,7 @@ void AAwCharacter::Init_Paramters()
 	GetCharacterMovement()->BrakingDecelerationFalling = this->BrakingDecelerationWalking;
 	GetCharacterMovement()->MaxFlySpeed = this->ClimbVectorZ;
 
-	Init_BeginPlay();
-}
-
-void AAwCharacter::Init_BeginPlay()
-{
 	BaseEyeHeight = 103.;
-	AttributeComp->SetHealth(100, this);
 }
 
 // Called when the game starts or when spawned
@@ -91,7 +93,26 @@ void AAwCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 	//init
-	Init_BeginPlay();
+	UAWAttributeComp* AttributeComp =GetOwningAttribute();
+	if (ensure(AttributeComp))
+	{
+		AttributeComp->OnHealthChange.AddDynamic(this, &AAwCharacter::OnHealthChange);
+	}
+	
+	if(APlayerController* PC = Cast<APlayerController>(GetController()))
+	{
+		if(AAwHUD* HUD = Cast<AAwHUD>(PC->GetHUD()))
+		{
+			AAWPlayerState* PS =  PC->GetPlayerState<AAWPlayerState>();
+			if(!ensure(PS)) return;
+			UAWAttributeComp* AC =  PS->GetPlayerAttribute();
+			if(ensure(AC))
+			{
+				HUD->InitOverlayWidget(PC,PS,AC,ActionComp);
+			}
+		}
+	}
+
 }
 
 // Called every frame
@@ -177,8 +198,8 @@ bool AAwCharacter::DetectWall()
 	FVector Hit_normal = HitResult.ImpactNormal;
 	FVector Hit_location = HitResult.ImpactPoint;
 
-	StartLocation = Hit_location + Hit_normal * 150;
-	EndLocation = Hit_location - Hit_normal * 50;
+	StartLocation = Hit_location + Hit_normal * 100;
+	EndLocation = Hit_location - Hit_normal * 200;
 	// Draw
 	// DrawDebugBox(GetWorld(), HitResult.ImpactPoint, BoxExtend, FQuat::Identity, FColor::Red, false, 2.f);
 
@@ -187,35 +208,37 @@ bool AAwCharacter::DetectWall()
 	if (abs(Angle) > 30)
 		return false;
 
-	const float Dis_thred = 50.f;
+	const float Dis_thred = 100.f;
 	FVector Hit_location_pre = Hit_location;
 	FVector ZOffest = FVector(0, 0, 25);
 
-	while (bHit && StartLocation.Z < BaseEyeHeight + 120.)
+	while (bHit && Hit_location.Z < BaseEyeHeight + 100.)
 	{
 		bHit = GetWorld()->SweepSingleByObjectType(HitResult, StartLocation, EndLocation, FQuat::Identity,
 		                                           ECC_WorldStatic,
 		                                           CollisionBox, CollisionParams);
 		if (!bHit)
 			break;
-		float Dis = FMath::Abs((Hit_location - Hit_location_pre).Dot(GetActorForwardVector()));
-		// 
+		
 		Hit_normal = HitResult.ImpactNormal;
 		Hit_location = HitResult.ImpactPoint;
+
+		float Dis = FMath::Abs((Hit_location - Hit_location_pre).Dot(GetActorForwardVector()));
+		//
+		
+
 		if (Dis > Dis_thred ||
 			Hit_normal.Z < -0.5 || Hit_normal.Z > 0.86)
 			return false;
-
-		// DrawDebugBox(GetWorld(), result.ImpactPoint, BoxExtend, FQuat::Identity, FColor::Red, false, 2.f);
+		//
+		DrawDebugBox(GetWorld(), HitResult.ImpactPoint, BoxExtend, FQuat::Identity, FColor::Red, false, 2.f);
+		
 		Hit_location_pre = Hit_location;
 		StartLocation += ZOffest;
 		EndLocation += ZOffest;
 	}
-
-	// 检测墙体厚度?
-
-
-	if (Hit_location.Z > BaseEyeHeight + 15.)
+	
+	if (Hit_location.Z > BaseEyeHeight + 50.)
 	{
 		GEngine->AddOnScreenDebugMessage(-1, 0.f, FColor::White, Hit_normal.ToString());
 		DrawDebugBox(GetWorld(), Hit_location, BoxExtend, FQuat::Identity, FColor::Green, false, 2.f);
@@ -439,13 +462,12 @@ bool AAwCharacter::DetectAndClimbUp()
 	return false;
 }
 
-
 void AAwCharacter::OnHealthChange(AActor* InstigatorActor, UAWAttributeComp* AttributeComponent, float NewHealth,
                                   float Change)
 {
-	if (this->AttributeComp)
+	if (UAWAttributeComp* PlayerAttribute =  GetOwningAttribute())
 	{
-		if (!this->AttributeComp->isAlive())
+		if (!PlayerAttribute->isAlive())
 		{
 			APlayerController* PC = Cast<APlayerController>(GetController());
 			// ragdoll
@@ -455,11 +477,23 @@ void AAwCharacter::OnHealthChange(AActor* InstigatorActor, UAWAttributeComp* Att
 			DisableInput(PC);
 		}
 	}
+	else
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Red,
+		                                 "Player Attribute is not found\n In FUN AAwCharacter::OnHealthChange");
+	}
 }
 
 void AAwCharacter::HealSelf(float v)
 {
-	AttributeComp->SetHealth(v, this);
+	if (UAWAttributeComp* PlayerAttribute =  GetOwningAttribute())
+	{
+		PlayerAttribute->SetHealth(v, this);
+	}
+	else
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Red, "Player Attribute is not found");
+	}
 }
 
 void AAwCharacter::Jump()

@@ -2,7 +2,7 @@
 
 
 #include "AI/AWBTTask_RangedAttack.h"
-#include "..\Public\AWAttributeComp.h"
+#include "..\Public\MyGAS/AWAttributeComp.h"
 #include "AIController.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "GameFramework/Character.h"

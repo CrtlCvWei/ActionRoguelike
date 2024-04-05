@@ -1,7 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "AwWorldTipsWidget.h"
+#include "UI/AwWorldTipsWidget.h"
 
 #include "Blueprint/WidgetLayoutLibrary.h"
 

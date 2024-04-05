@@ -3,7 +3,6 @@
 
 #include "AWProjectileBase.h"
 
-#include "AWAttributeComp.h"
 #include "Components/SphereComponent.h"
 #include "Niagara/Public/NiagaraComponent.h"
 #include "Components/AudioComponent.h"

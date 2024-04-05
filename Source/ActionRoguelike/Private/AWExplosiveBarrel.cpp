@@ -3,8 +3,9 @@
 
 #include "AWExplosiveBarrel.h"
 
-#include "AWAttributeComp.h"
-#include "Kismet/GameplayStatics.h"
+#include "AwCharacter.h"
+#include "AWPlayerState.h"
+#include "..\Public\MyGAS/AWAttributeComp.h"
 
 void AAWExplosiveBarrel::Init_Paramters()
 {
@@ -26,7 +27,6 @@ void AAWExplosiveBarrel::Init_Paramters()
 	this->RForce->ImpulseStrength = this->ImpluseStrength;
 	this->RForce->ForceStrength = this->ForceStrength;
 	this->RForce->Radius = this->ExplosiveRadius;
-
 }
 
 // Sets default values
@@ -42,10 +42,12 @@ void AAWExplosiveBarrel::WhenActorsHit(UPrimitiveComponent* HitComp, AActor* Oth
 {
 	/* 被碰撞组件HitComp、碰撞组件OtherComp */
 	FName CollisionProfile = OtherComp->GetCollisionProfileName();
-	
-	if (CollisionProfile == FName("Projectile")||CollisionProfile == FName("ProjectileBase"))
+
+	if (CollisionProfile == FName("Projectile") || CollisionProfile == FName("ProjectileBase"))
 	{
-		// 使用 FTimerDelegate 
+		// 使用 FTimerDelegate , 2秒后执行 Fire 函数,不会重复执行
+		if (GetWorldTimerManager().IsTimerActive(ExplosiveTimeHandler))
+			return;
 		FTimerDelegate TimerDelegate;
 		TimerDelegate.BindUFunction(this, FName("Fire"), OtherActor);
 		//
@@ -60,10 +62,10 @@ void AAWExplosiveBarrel::WhenActorsHit(UPrimitiveComponent* HitComp, AActor* Oth
 void AAWExplosiveBarrel::Fire(AActor* OtherActor)
 {
 	//我们对网格体组件施加作用力，让其能向上弹起
-	FVector BoostIntensity = FVector::UpVector * this->ImpluseItself; 
+	FVector BoostIntensity = FVector::UpVector * this->ImpluseItself;
 	this->SMeshComp->AddImpulse(BoostIntensity, NAME_None, true);
 	this->RForce->FireImpulse();
-	
+
 	FCollisionShape CollisionShape = FCollisionShape::MakeSphere(this->RForce->Radius);
 
 	// 定义一个查询参数，这里使用 ECC_Visibility 作为碰撞频道，你也可以根据需要更改
@@ -77,7 +79,7 @@ void AAWExplosiveBarrel::Fire(AActor* OtherActor)
 	if (GetWorld()->SweepMultiByChannel(HitResults, GetActorLocation(), GetActorLocation(), FQuat::Identity, ECC_Pawn,
 	                                    CollisionShape, QueryParams))
 	{
-
+		UAWAttributeComp* Attribute;
 		for (const FHitResult& HitResult : HitResults)
 		{
 			AActor* HitActor = HitResult.GetActor();
@@ -85,16 +87,29 @@ void AAWExplosiveBarrel::Fire(AActor* OtherActor)
 			if (HitActor)
 			{
 				// IF Actor IS PAWN
-				if (Cast<APawn>(HitActor))
+				if (APawn* ThePawn = Cast<APawn>(HitActor))
 				{
-					UAWAttributeComp* Attribute = Cast<UAWAttributeComp>(HitActor->GetComponentByClass(UAWAttributeComp::StaticClass()));
+					if (AAwCharacter* Player = Cast<AAwCharacter>(ThePawn))
+					{
+						APlayerController* PlayerController = Cast<APlayerController>(Player->GetController());
+						AAWPlayerState* PS = Cast<AAWPlayerState>(PlayerController->PlayerState);
+						if (!ensure(PS))
+							return;
+						Attribute = Cast<UAWAttributeComp>(PS->GetPlayerAttribute());
+					}
+					else
+					{
+						// IF Actor IS AI
+						Attribute = Cast<UAWAttributeComp>(
+							HitActor->GetComponentByClass(UAWAttributeComp::StaticClass()));
+					}
 					if (Attribute)
 					{
-						if(OtherActor->GetInstigator())
-							Attribute->SetHealth(-30,OtherActor->GetInstigator());
+						if (OtherActor->GetInstigator())
+							Attribute->SetHealth(-30, OtherActor->GetInstigator());
 						else
-							Attribute->SetHealth(-30,this);
-					}	
+							Attribute->SetHealth(-30, this);
+					}
 				}
 			}
 		}

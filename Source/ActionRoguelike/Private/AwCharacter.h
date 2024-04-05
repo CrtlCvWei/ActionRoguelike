@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "AWInteractionComponent.h"
 #include "GameFramework/Character.h"
+// #include "MyGAS/AwAttributeSet.h"
 #include "AwCharacter.generated.h"
 
 class UAwActionComponent;
@@ -37,9 +38,7 @@ private:
 	
 	UFUNCTION()
 	void Init_Paramters();
-	
-	UFUNCTION()
-	virtual void Init_BeginPlay();
+
 
 public:
 	// Sets default values for this character's properties
@@ -66,11 +65,12 @@ protected:
 	UPROPERTY(VisibleAnywhere)
 	UAWInteractionComponent* InteractionComp;
 
-	UPROPERTY(VisibleAnywhere,BlueprintReadOnly,Category="Components")
-	UAWAttributeComp* AttributeComp;
-
+	// GAS demo
 	UPROPERTY(VisibleAnywhere,BlueprintReadOnly,Category="Components")
 	UAwActionComponent* ActionComp;;
+	// GAS demo
+	// UPROPERTY(VisibleAnywhere,BlueprintReadOnly,Category="Components")
+	// UAwAttributeSet* MyAttributeSet;
 
 	UPROPERTY(EditAnywhere,BlueprintReadOnly,Category="ClimbAndVault")
 	FName RightKneeSocketName;
@@ -159,5 +159,8 @@ public:
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
 	virtual void PostInitializeComponents() override;
+
+	UFUNCTION(BlueprintCallable)
+	UAWAttributeComp* GetOwningAttribute() const;
 	
 };
