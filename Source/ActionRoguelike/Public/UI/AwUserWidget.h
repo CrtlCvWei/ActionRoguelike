@@ -22,6 +22,7 @@ protected:
 	UFUNCTION(BlueprintImplementableEvent)
 	void WidgetControllerSet();
 
+	
 public:
 
 	UFUNCTION(BlueprintCallable)

@@ -5,7 +5,7 @@
 
 void UAwWidgetController::SetWidgetControllerParams(FAwWidgetControllerParams& Params)
 {
-	PlayerController = std::move(Params.PlayerController);
+	PlayerController = Cast<APlayerController>(std::move(Params.PlayerController));
 	PlayerState = std::move(Params.PlayerState);
 	AttributeComp = std::move(Params.AttributeComp);
 	AbilitySystemComp = std::move(Params.AbilitySystemComponent);

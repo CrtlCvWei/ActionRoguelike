@@ -7,6 +7,7 @@
 #include "Components/SizeBox.h"
 #include "GameFramework/Character.h"
 #include "Kismet/GameplayStatics.h"
+#include "UI/WidgetController/AwOverayWidgetController.h"
 
 void UAwWorldUserWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
 {
@@ -28,3 +29,20 @@ void UAwWorldUserWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTi
 		}
 	}
 }
+
+UAwWidgetController* UAwWorldUserWidget::GetWidgetController(FAwWidgetControllerParams Params)
+{
+	// TODO: Implement this
+	if(WidgetController)
+		return Cast<UAwWidgetController>(WidgetController);
+	
+	// TODO: Create a new object of type UAwOverayWidgetController
+	const auto Controller = Cast<UAwOverayWidgetController>(NewObject<UAwOverayWidgetController>(this, UAwOverayWidgetController::StaticClass()));
+	Controller->SetWidgetControllerParams(Params);
+	Controller->BindCallBacksToDependencies();
+	// Controller->BroadcastInitVals();
+	SetWidgetController(Controller);
+	return Controller;
+}
+
+

@@ -3,8 +3,9 @@
 
 #include "AwAction_BlackHoleAbilbity.h"
 #include "..\Public\MyGAS/AWAttributeComp.h"
-#include "AwActionComponent.h"
+#include "MyGAS/AwActionComponent.h"
 #include "AWBlackHolePj.h"
+#include "AWPlayerState.h"
 #include "GameFramework/CharacterMovementComponent.h"
 
 UAwAction_BlackHoleAbilbity::UAwAction_BlackHoleAbilbity()
@@ -15,8 +16,11 @@ void UAwAction_BlackHoleAbilbity::StartAction_Implementation(AActor* Instigator)
 {
 	Super::StartAction_Implementation(Instigator);
 	//
+	if(bIsRunning)
+		return;
 	if (ensure(this->ProjectileClass) && ensure(AttackAni))
 	{
+		bIsRunning = true;
 		AAwCharacter* Player = Cast<AAwCharacter>(Instigator);
 		if(Player->GetIsClimbing() || Player->GetCharacterMovement()->IsFalling())
 		{
@@ -87,15 +91,15 @@ FRotator UAwAction_BlackHoleAbilbity::GetProjectileRotation(FVector HandLocation
 {
 	/* 从摄像机中心进行射线检测，检测视线处是否有可见物体碰撞，根据碰撞情况修正projectile运动姿态、方向*/
 
-	ACharacter* Player = Cast<ACharacter>(GetOwningComponent()->GetOuter());
-	if (ensure(Player))
+	APlayerState* PS = Cast<APlayerState>(GetOwningComponent()->GetOuter());
+	if (ensure(PS))
 	{
 		FVector CameraLocation;
 		FVector EyeEndLocation;
 		FRotator CameraRotation;
 		FRotator ProjectileRotation;
 		float longest_dis = 10000.f;
-
+		AAwCharacter* Player = Cast<AAwCharacter>(PS->GetPawn());
 		Player->GetController()->GetPlayerViewPoint(CameraLocation, CameraRotation);
 		EyeEndLocation = CameraLocation + longest_dis * CameraRotation.Vector();
 

@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "AwActionComponent.h"
+#include "MyGAS/AwActionComponent.h"
 #include "MyGAS/AWAttributeComp.h"
 #include "AbilitySystemComponent.h"
 #include "AwWidgetController.generated.h"
@@ -25,13 +25,13 @@ struct FAwWidgetControllerParams
 	{
 	};
 
-	FAwWidgetControllerParams(APlayerController* PC, APlayerState* PS, UAWAttributeComp* AC, UAwActionComponent* ASC):
+	FAwWidgetControllerParams(AController* PC, APlayerState* PS, UAWAttributeComp* AC, UAwActionComponent* ASC):
 		PlayerController(PC), PlayerState(PS), AttributeComp(AC), AbilitySystemComponent(ASC)
 	{
 	};
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="WidgetController")
-	TObjectPtr<APlayerController> PlayerController = nullptr;
+	TObjectPtr<AController> PlayerController = nullptr;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="WidgetController")
 	TObjectPtr<APlayerState> PlayerState = nullptr;

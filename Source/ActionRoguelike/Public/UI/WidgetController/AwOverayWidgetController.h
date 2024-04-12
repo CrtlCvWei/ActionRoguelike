@@ -9,15 +9,15 @@
 /**
  * 
  */
+
+
+
 UCLASS()
 class ACTIONROGUELIKE_API UAwOverayWidgetController : public UAwWidgetController
 {
 	GENERATED_BODY()
-	
-	virtual void BroadcastInitVals() override;
-	virtual void BindCallBacksToDependencies() override;
-protected:
 
+protected:
 	UPROPERTY(BlueprintAssignable)
 	FHealthChangeUISignture OnHealthChangeForUI;
 
@@ -29,8 +29,18 @@ protected:
 
 	UPROPERTY(BlueprintAssignable)
 	FMaxManaChangeUISignture OnMaxManaChangeForUI;
-	
-	
+
+
+	UFUNCTION()
 	void HealthChangeForUI(float NewVal,float OldVal) const;
+	UFUNCTION()
 	void MaxHealthChangeForUI(float NewVal,float OldVal) const;
+	UFUNCTION()
+	void ManaChangeForUI(float NewVal,float OldVal) const;
+	UFUNCTION()
+	void MaxManaChangeForUI(float NewVal,float OldVal) const;
+	
+public:
+	virtual void BindCallBacksToDependencies() override;
+	virtual void BroadcastInitVals() override;
 };

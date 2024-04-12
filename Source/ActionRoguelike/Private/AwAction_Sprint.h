@@ -14,8 +14,6 @@ class UAwAction_Sprint : public UAwAction
 {
 	GENERATED_BODY()
 private:
-
-	bool bIsRunning = false;
 	
 	UPROPERTY(EditAnywhere,Blueprintable,Category="Attribute")
 	float MaxSpeed = 800.f;
@@ -28,4 +26,8 @@ public:
 
 	virtual void  StartAction_Implementation(AActor* Instigator) override;
 	virtual void StopAction_Implementation(AActor* Instigator) override;
+
+	AActor* GetTheOwner() const;
 };
+
+

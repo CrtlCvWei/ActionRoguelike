@@ -35,7 +35,6 @@ private:
 	const float BrakingDecelerationWalking = 10.f;
 	const float ClimbVectorZ = 170.f;
 	const float ClimbVectorX = 100.f;
-	
 	UFUNCTION()
 	void Init_Paramters();
 
@@ -66,11 +65,6 @@ protected:
 	UAWInteractionComponent* InteractionComp;
 
 	// GAS demo
-	UPROPERTY(VisibleAnywhere,BlueprintReadOnly,Category="Components")
-	UAwActionComponent* ActionComp;;
-	// GAS demo
-	// UPROPERTY(VisibleAnywhere,BlueprintReadOnly,Category="Components")
-	// UAwAttributeSet* MyAttributeSet;
 
 	UPROPERTY(EditAnywhere,BlueprintReadOnly,Category="ClimbAndVault")
 	FName RightKneeSocketName;
@@ -110,7 +104,6 @@ protected:
 
 
 	// trace detection
-
 	UPROPERTY(BlueprintAssignable)
 	FClimingUpSignature ClimbingUp;
 	
@@ -144,7 +137,7 @@ protected:
 	void OnHealthChange(AActor* InstigatorActor, UAWAttributeComp* AttributeComponent, float NewHealth, float Change);
 
 	UFUNCTION(Exec)
-	void HealSelf(float v = 100);
+	void HealSelf(float v = 10000.f);
 
 
 	
@@ -162,5 +155,7 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	UAWAttributeComp* GetOwningAttribute() const;
-	
+
+	UFUNCTION(BlueprintCallable)
+	UAwActionComponent* GetOwningAction() const;
 };

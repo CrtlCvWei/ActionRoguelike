@@ -10,8 +10,6 @@
 
 DECLARE_MULTICAST_DELEGATE_TwoParams(FOnAwGameplayAttributeValueChange,float,float);
 
-
-
 UENUM()
 enum AttributeChangedType
 {
@@ -133,6 +131,27 @@ struct FAwAttributeData
 		return *this;
 	}
 
+	bool operator==(const FAwAttributeData& Other) const
+	{
+		return BaseVal == Other.BaseVal && CurrentVal == Other.CurrentVal;
+	}
+	
+	bool operator==(const FAwAttributeData* Other) const
+	{
+		return BaseVal == Other->BaseVal && CurrentVal == Other->CurrentVal;
+	}
+
+	bool operator!=(const FAwAttributeData& Other) const
+	{
+		return BaseVal != Other.BaseVal && CurrentVal != Other.CurrentVal;
+	}
+	
+	bool operator!=(const FAwAttributeData* Other) const
+	{
+		return BaseVal != Other->BaseVal && CurrentVal != Other->CurrentVal;
+	}
+
+
 	FAwAttributeData(): BaseVal(0.0f), CurrentVal(0.f)
 	{
 	};
@@ -157,15 +176,15 @@ struct FAwAttributeData
 	/** Modifies the permanent base value, normally only called by ability system or during initialization */
 	virtual void SetBaseValue(float NewValue);
 
+	bool IsNotVaild() {return *this == &ERROR;}
+
 protected:
-	UPROPERTY(BlueprintReadOnly, Category = "Property")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Property")
 	float BaseVal;
 
-	UPROPERTY(BlueprintReadOnly, Category = "Property")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Property")
 	float CurrentVal;
 };
-
-
 
 USTRUCT()
 struct FReplicaAttributesEntry_FName_FAwAttributeData
@@ -184,8 +203,6 @@ struct FReplicaAttributesEntry_FName_FAwAttributeData
 	}
 };
 
-
-
 UCLASS()
 class ACTIONROGUELIKE_API UAwAttributeSet : public UAttributeSet
 {
@@ -198,22 +215,23 @@ protected:
 	UPROPERTY(BlueprintReadOnly)
 	AActor* OwningActor;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Attributes")
+	UPROPERTY(Replicated,EditAnywhere, BlueprintReadOnly, Category = "Attributes")
 	FAwAttributeData Health;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Attributes")
+	UPROPERTY(Replicated,EditAnywhere, BlueprintReadOnly, Category = "Attributes")
 	FAwAttributeData MaxHealth;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Attributes")
+	UPROPERTY(Replicated,EditAnywhere, BlueprintReadOnly, Category = "Attributes")
 	FAwAttributeData Mana;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Attributes")
+	UPROPERTY(Replicated,EditAnywhere, BlueprintReadOnly, Category = "Attributes")
 	FAwAttributeData MaxMana;
 	
 	
 	TMap<FName, FOnAwGameplayAttributeValueChange> AttributeCurrValueChangeDelegates;
 	
 	TMap<FName, FOnAwGameplayAttributeValueChange> AttributeBaseValueChangeDelegates;
+	
 	
 	void CreateAttributeDataChangeDelegates();
 	

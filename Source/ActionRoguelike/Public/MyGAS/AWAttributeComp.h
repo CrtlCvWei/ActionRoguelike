@@ -4,16 +4,15 @@
 
 #include "CoreMinimal.h"
 #include "AttributeSet.h"
+#include "Delegates/DelegateInstancesImpl.h"
 #include "Components/ActorComponent.h"
 #include "MyGAS/AwAttributeSet.h"
+#include <functional>
 #include "AWAttributeComp.generated.h"
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_FourParams(FOnHealthChangeSignture, AActor*, InstigatorActor, UAWAttributeComp*,
+UDELEGATE(BlueprintAuthorityOnly)
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_FourParams(FOnAttributeChangeSignture, AActor*, InstigatorActor, UAWAttributeComp*,
                                               AttributeComp, float, NewHealth, float, Change);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_FourParams(FOnManaChangeSignture, AActor*, InstigatorActor, UAWAttributeComp*,
-											  AttributeComp, float, NewMana, float, Change);
-
-
 
 
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
@@ -21,25 +20,31 @@ class ACTIONROGUELIKE_API UAWAttributeComp : public UActorComponent
 {
 	GENERATED_BODY()
 
-public:
-	// Sets default values for this component's properties
-	UAWAttributeComp();
 
-protected:
-	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="Attributes")
-	float Max_Health;
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="Attributes")
-	float Health;
-	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Attributes")
+private:
+	UPROPERTY(BlueprintCallable)
+	FOnAttributeChangeSignture OnChange;
+
+	// Sets default values for this component's properties
+
+	UPROPERTY(EditDefaultsOnly, Blueprintable, Category="Attributes")
 	TObjectPtr<UAwAttributeSet> AttributeSet;
 
+	UPROPERTY()
+	TMap<FName, FOnAttributeChangeSignture> AllAttributeChangeMap;
 
+	inline  FAwAttributeData GetAttributeData(const FName AttributeName) const;
+	
 public:
-	UFUNCTION(BlueprintCallable)
-	bool SetHealth(float v, AActor* Sourcer);
+	UAWAttributeComp();
+	void CreateAllAttributeChangeMap();
 
+	UFUNCTION(BlueprintCallable)
+	bool SetHealth(const float v, AActor* Sourcer);
+
+	UFUNCTION(BlueprintCallable)
+	bool SetAttribute( FName AttributeName, const float v,AActor* Sourcer);
+	
 	UFUNCTION(BlueprintCallable)
 	bool isAlive() const;
 
@@ -47,21 +52,46 @@ public:
 	float GetHealth() const { return AttributeSet->GetHealth(); }
 
 	UFUNCTION(BlueprintCallable)
-	float GetMaxHealth() const {return AttributeSet->GetMaxHealth(); }
+	float GetMaxHealth() const { return AttributeSet->GetMaxHealth(); }
+	
+	UFUNCTION(BlueprintCallable)
+	inline  float GetAttributeBase(FName AttributeName) const;
 
 	UFUNCTION(BlueprintCallable)
+	inline  float GetAttributeCurrent(FName AttributeName) const;
+	
+	UFUNCTION(BlueprintCallable)
 	UAwAttributeSet* GetAttributeSet() const { return AttributeSet; }
+
+	UPROPERTY(BlueprintAssignable)
+	FOnAttributeChangeSignture OnHealthChange;
 	
 	UPROPERTY(BlueprintAssignable)
-	FOnHealthChangeSignture OnHealthChange;
-
-	UPROPERTY(BlueprintAssignable)
-	FOnHealthChangeSignture OnMaxHealthChange;
-
-	UPROPERTY(BlueprintAssignable)
-	FOnHealthChangeSignture OnManaChange;
-
-	UPROPERTY(BlueprintAssignable)
-	FOnHealthChangeSignture OnMaxManaChange;
+	FOnAttributeChangeSignture OnMaxHealthChange;
 	
+	UPROPERTY(BlueprintAssignable)
+	FOnAttributeChangeSignture OnManaChange;
+	
+	UPROPERTY(BlueprintAssignable)
+	FOnAttributeChangeSignture OnMaxManaChange;
+	
+	UFUNCTION(BlueprintCallable)
+	void AttributeChangeBoardCast(const FName Name, AActor* Instigator, float NewValue, float Change);
+
+	template <class UserClass>
+	UFUNCTION()
+	void AttributeChangeBind(const FName Name, UserClass* Object,void (UserClass::*Function)(AActor*,UAWAttributeComp*, float, float),FString&& FuncName)
+	{
+	    // AttributeChangeBind("Health", this, &AAWAICharacter::OnHealthChange,"&AAWAICharacter::OnHealthChange");
+		if (AllAttributeChangeMap.Contains(Name))
+		{
+			FName FunctionName = STATIC_FUNCTION_FNAME(*FuncName); // *FString is TCHAR
+			AllAttributeChangeMap[Name].__Internal_AddUniqueDynamic(Object, Function,FunctionName);// Add the function to the delegate
+		}
+		else
+		{
+			UE_LOG(LogTemp, Warning, TEXT("AttributeChangeBind: %s not found in AllAttributeChangeMap"),*Name.ToString());
+		}
+	}
+		
 };

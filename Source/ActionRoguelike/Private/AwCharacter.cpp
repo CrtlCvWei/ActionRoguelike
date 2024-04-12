@@ -4,8 +4,7 @@
 #include "AwCharacter.h"
 
 
-#include "AwActionComponent.h"
-#include "AWGameModeBase.h"
+#include "MyGAS/AwActionComponent.h"
 #include "AWPlayerState.h"
 #include "..\Public\MyGAS/AWAttributeComp.h"
 #include "Camera/CameraComponent.h"
@@ -14,7 +13,6 @@
 #include "Engine/Engine.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/SpringArmComponent.h"
-#include "Kismet/KismetMathLibrary.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "UI/AwHUD.h"
 
@@ -40,8 +38,18 @@ UAWAttributeComp* AAwCharacter::GetOwningAttribute() const
 	AAWPlayerState* PS = PC->GetPlayerState<AAWPlayerState>();
 	if(!ensure(PS))
 		return  nullptr;
-	UAWAttributeComp* AttributeComp = PS->GetPlayerAttribute();
-	return AttributeComp;
+	return PS->GetPlayerAttribute();
+}
+
+UAwActionComponent* AAwCharacter::GetOwningAction() const
+{
+	APlayerController* PC = Cast<APlayerController>(GetController());
+	if(!ensure(PC))
+		return nullptr;
+	AAWPlayerState* PS = PC->GetPlayerState<AAWPlayerState>();
+	if(!ensure(PS))
+		return  nullptr;
+	return  PS->GetPlayerAction();;
 }
 
 void AAwCharacter::Init_Paramters()
@@ -68,10 +76,6 @@ void AAwCharacter::Init_Paramters()
 	// INPUT 'F' to interact
 	InteractionComp = CreateDefaultSubobject<UAWInteractionComponent>("InteractionComp");
 	
-
-	// Actions
-	ActionComp = CreateDefaultSubobject<UAwActionComponent>("ActionComp");
-
 	GetCharacterMovement()->MaxWalkSpeed = this->NormalMoveSpeed;
 	GetCharacterMovement()->GravityScale = this->GravityScale;
 	JumpMaxHoldTime = 1.0f;
@@ -96,7 +100,7 @@ void AAwCharacter::BeginPlay()
 	UAWAttributeComp* AttributeComp =GetOwningAttribute();
 	if (ensure(AttributeComp))
 	{
-		AttributeComp->OnHealthChange.AddDynamic(this, &AAwCharacter::OnHealthChange);
+		AttributeComp->AttributeChangeBind("Health", this, &AAwCharacter::OnHealthChange,"&AAwCharacter::OnHealthChange");
 	}
 	
 	if(APlayerController* PC = Cast<APlayerController>(GetController()))
@@ -108,7 +112,7 @@ void AAwCharacter::BeginPlay()
 			UAWAttributeComp* AC =  PS->GetPlayerAttribute();
 			if(ensure(AC))
 			{
-				HUD->InitOverlayWidget(PC,PS,AC,ActionComp);
+				HUD->InitOverlayWidget(PC,PS,AC,GetOwningAction());
 			}
 		}
 	}
@@ -132,13 +136,13 @@ void AAwCharacter::Tick(float DeltaTime)
 void AAwCharacter::BeginSprint()
 {
 	// GetCharacterMovement()->MaxWalkSpeed = this->MaxMoveSpeed;
-	ActionComp->StartActionByName(this, "Sprint");
+	GetOwningAction()->StartActionByName(this, "Sprint");
 }
 
 void AAwCharacter::EndSprint()
 {
 	// GetCharacterMovement()->MaxWalkSpeed = this->NormalMoveSpeed;
-	ActionComp->StopActionByName(this, "Sprint");
+	GetOwningAction()->StopActionByName(this, "Sprint");
 }
 
 void AAwCharacter::MoveForward(float Values)
@@ -568,12 +572,12 @@ void AAwCharacter::StopJumping()
 
 void AAwCharacter::PrimaryAttack()
 {
-	this->ActionComp->StartActionByName(this, "PrimaryAttack");
+	GetOwningAction()->StartActionByName(this, "PrimaryAttack");
 }
 
 void AAwCharacter::BlackHoleAbility()
 {
-	this->ActionComp->StartActionByName(this, "BlackHoleAbility");
+	GetOwningAction()->StartActionByName(this, "BlackHoleAbility");
 }
 
 void AAwCharacter::PrimaryInterat()

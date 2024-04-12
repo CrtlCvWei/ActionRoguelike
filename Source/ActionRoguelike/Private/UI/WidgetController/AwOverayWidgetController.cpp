@@ -40,8 +40,11 @@ void UAwOverayWidgetController::BindCallBacksToDependencies()
 		return;
 	}
 
+	// My Blinding to the Attribute Set
 	AttributeSet->GetAttributeChangeDelegate(FName("Health"),Current).AddUObject(this, &UAwOverayWidgetController::HealthChangeForUI);
 	AttributeSet->GetAttributeChangeDelegate(FName("MaxHealth"),Current).AddUObject(this, &UAwOverayWidgetController::MaxHealthChangeForUI);
+	AttributeSet->GetAttributeChangeDelegate(FName("Mana"),Current).AddUObject(this, &UAwOverayWidgetController::ManaChangeForUI);
+	AttributeSet->GetAttributeChangeDelegate(FName("MaxMana"),Current).AddUObject(this, &UAwOverayWidgetController::MaxManaChangeForUI);
 }
 
 void UAwOverayWidgetController::HealthChangeForUI(float NewVal, float OldVal) const
@@ -53,4 +56,16 @@ void UAwOverayWidgetController::MaxHealthChangeForUI(float NewVal, float OldVal)
 {
 	OnMaxHealthChangeForUI.Broadcast(NewVal, OldVal);
 }
+
+void UAwOverayWidgetController::ManaChangeForUI(float NewVal, float OldVal) const
+{
+	OnManaChangeForUI.Broadcast(NewVal, OldVal);
+}
+
+void UAwOverayWidgetController::MaxManaChangeForUI(float NewVal, float OldVal) const
+{
+	OnMaxManaChangeForUI.Broadcast(NewVal, OldVal);
+}
+
+
 

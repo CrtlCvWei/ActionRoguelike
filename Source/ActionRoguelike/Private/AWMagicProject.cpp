@@ -50,7 +50,7 @@ void AAWMagicProject::OnBeginOverlap_Implementation(UPrimitiveComponent* Overlap
 			APlayerController* PC = Cast<APlayerController>(Player->GetController());
 			AAWPlayerState* AwPS = Cast<AAWPlayerState>(PC->PlayerState);
 			UAWAttributeComp* Attribute = AwPS->GetPlayerAttribute();
-			if (Attribute->SetHealth(-20, this->GetInstigator()))
+			if (Attribute->SetAttribute(FName("Health"), -20.f, this->GetInstigator()))
 			{
 				if (this->Destroy())
 				{

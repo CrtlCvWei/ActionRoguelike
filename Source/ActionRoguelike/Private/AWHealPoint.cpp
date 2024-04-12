@@ -2,6 +2,8 @@
 
 
 #include "AWHealPoint.h"
+
+#include "AwCharacter.h"
 #include "..\Public\MyGAS/AWAttributeComp.h"
 #include "Components/SphereComponent.h"
 
@@ -21,7 +23,8 @@ void AAWHealPoint::BeginPlay()
 void AAWHealPoint::Interact_Implementation(APawn* InstigorPawn)
 {
 	IAWGameplayInterface::Interact_Implementation(InstigorPawn);
-	UAWAttributeComp* Attribute = Cast<UAWAttributeComp>(InstigorPawn->GetComponentByClass(UAWAttributeComp::StaticClass()));
+	AAwCharacter* Instigor = Cast<AAwCharacter>(InstigorPawn);
+	UAWAttributeComp* Attribute = Cast<UAWAttributeComp>(Instigor->GetOwningAttribute());
 	if(Attribute)
 	{
 		if(Attribute->GetHealth() < Attribute->GetMaxHealth() && this->visible)
@@ -29,7 +32,6 @@ void AAWHealPoint::Interact_Implementation(APawn* InstigorPawn)
 			// Not  in full health
 			Attribute->SetHealth(50.f,this);
 			// trigger the event
-			// BeUsed.Broadcast(InstigorPawn,Attribute);
 			CoolDown();
 		}
 	}

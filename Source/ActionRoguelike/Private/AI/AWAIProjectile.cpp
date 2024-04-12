@@ -3,6 +3,7 @@
 
 #include "AI/AWAIProjectile.h"
 
+#include "AwCharacter.h"
 #include "..\Public\MyGAS/AWAttributeComp.h"
 #include "Components/SphereComponent.h"
 #include "Niagara/Public/NiagaraComponent.h"
@@ -22,40 +23,6 @@ void AAWAIProjectile::Init_Paramters()
 	
 }
 
-void AAWAIProjectile::OnBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
-	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
-{
-	// TODO:
-	if (OtherActor && OtherActor != this->GetInstigator())
-	{
-		UAWAttributeComp* Attribute = Cast<UAWAttributeComp>(
-			OtherActor->GetComponentByClass(UAWAttributeComp::StaticClass()));
-		//check if null
-
-		if (Attribute)
-		{
-			float autral_damage = -this->damage;
-			float God_test = CVarTurnAIProjectileDamage.GetValueOnGameThread();
-			autral_damage *= God_test;
-			
-			Attribute->SetHealth( autral_damage, this->GetInstigator());
-
-			bool bDebug = CVarDebugVisulizeAIProjectileDamage.GetValueOnGameThread();
-			if(bDebug)
-			{
-				FString CombineText = FString::Printf(
-				TEXT("Hit at here:%s and cost damage %f"), *SweepResult.ImpactPoint.ToString(), autral_damage);
-				DrawDebugString(GetWorld(), SweepResult.ImpactPoint, CombineText, nullptr, FColor::Red, 1.0f, true);
-			}
-			
-			if (this->Destroy())
-			{
-				if (VanishAudio && VanishAudio->Sound)
-					VanishAudio->Play();
-			}
-		}
-	}
-}
 
 void AAWAIProjectile::OnBeginOverlap_Implementation(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
                                                     UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
@@ -65,6 +32,15 @@ void AAWAIProjectile::OnBeginOverlap_Implementation(UPrimitiveComponent* Overlap
 		UAWAttributeComp* Attribute = Cast<UAWAttributeComp>(
 			OtherActor->GetComponentByClass(UAWAttributeComp::StaticClass()));
 		//check if null
+		if(!Attribute)
+		{
+			auto Player = Cast<AAwCharacter>(OtherActor);
+			if(Player)
+			{
+				// Player Attribute is in PlayerState
+				Attribute = Player->GetOwningAttribute();
+			}
+		}
 		if (Attribute)
 		{
 			float autral_damage = -this->damage;
@@ -72,7 +48,7 @@ void AAWAIProjectile::OnBeginOverlap_Implementation(UPrimitiveComponent* Overlap
 			autral_damage *= God_test;
 			
 			Attribute->SetHealth( autral_damage, this->GetInstigator());
-
+			Attribute->SetAttribute("Health", autral_damage, this->GetInstigator());
 			bool bDebug = CVarDebugVisulizeAIProjectileDamage.GetValueOnGameThread();
 			if(bDebug)
 			{
@@ -89,8 +65,6 @@ void AAWAIProjectile::OnBeginOverlap_Implementation(UPrimitiveComponent* Overlap
 		}
 	}
 }
-
-
 
 void AAWAIProjectile::OnComponentHit_Implementation(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp,
 	FVector NormalImpluse, const FHitResult& Hit)

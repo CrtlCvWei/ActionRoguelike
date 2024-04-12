@@ -59,7 +59,6 @@ void UAwAttributeSet::AttributeDataChangeDelegate(FName Name, float NewValue, fl
 }
 
 
-
 UAwAttributeSet::UAwAttributeSet()
 {
 	OwningActor = nullptr;
@@ -119,7 +118,6 @@ void UAwAttributeSet::OnRep_ReplicaAttributeMap()
 	UE_LOG(LogTemp, Warning, TEXT("Replicated OtherAttributes <--- TMap"));
 }
 
-
 TMap<FName, FAwAttributeData> UAwAttributeSet::GetAttributes() const
 {
 	return this->OtherAttributes;
@@ -178,5 +176,9 @@ inline void UAwAttributeSet::SetOwningActor()
 	if(OwningPlayerState)
 	{
 		OwningActor = OwningPlayerState->GetOwner();
+	}
+	else
+	{
+		OwningActor = Cast<AActor>( GetOuter());
 	}
 }

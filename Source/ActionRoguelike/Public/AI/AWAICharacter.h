@@ -36,6 +36,7 @@ protected:
 	UPROPERTY(EditDefaultsOnly,Category="AI")
 	TSubclassOf<UUserWidget> HealthBarClass;
 
+	UPROPERTY()
 	UAwWorldUserWidget* AIHealthBar;
 	
 	UFUNCTION()

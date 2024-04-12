@@ -37,20 +37,20 @@ void AAWAICharacter::BeginPlay()
 {
 	Super::BeginPlay();
 	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
+	if (ensure(this->AttributeComp))
+	{
+		AttributeComp->AttributeChangeBind("Health", this, &AAWAICharacter::OnHealthChange,"&AAWAICharacter::OnHealthChange");
+	}
+	if (ensure(this->SensingComp))
+	{
+		SensingComp->OnSeePawn.AddDynamic(this, &AAWAICharacter::OnPawnSeen);
+	}
 }
 
 void AAWAICharacter::PostInitializeComponents()
 {
 	Super::PostInitializeComponents();
-	if (ensure(this->AttributeComp))
-	{
-		AttributeComp->OnHealthChange.AddDynamic(this, &AAWAICharacter::OnHealthChange);
-	}
-	if (ensure(this->SensingComp))
-	{
-		SensingComp->OnSeePawn.AddDynamic(this, &AAWAICharacter::OnPawnSeen);
-		
-	}
+	
 }
 
 
@@ -61,13 +61,11 @@ void AAWAICharacter::OnHealthChange(AActor* InstigatorActor, UAWAttributeComp* A
 	{
 		if (!AttributeComp->isAlive())
 		{
-			AAIController* AaiController = Cast<AAIController>(this->GetController());
-			if (AaiController)
+			if (AAIController* AIController = Cast<AAIController>(this->GetController()))
 			{
 				// Stop the behavior tree and give reason
-				AaiController->GetBrainComponent()->StopLogic("Killed");
+				AIController->GetBrainComponent()->StopLogic("Killed");
 			}
-
 			// ragdoll
 			GetMesh()->SetAllBodiesSimulatePhysics(true);
 			GetMesh()->SetCollisionProfileName("Ragdoll");
@@ -82,10 +80,11 @@ void AAWAICharacter::OnHealthChange(AActor* InstigatorActor, UAWAttributeComp* A
 			{
 				if (HealthBarClass != nullptr)
 				{
-					AIHealthBar = CreateWidget<UAwWorldUserWidget>(GetWorld(), HealthBarClass);
-					if (AIHealthBar)
+					if (AIHealthBar == nullptr)
 					{
+						AIHealthBar = CreateWidget<UAwWorldUserWidget>(GetWorld(), HealthBarClass);
 						AIHealthBar->AttachActor = this;
+						AIHealthBar->GetWidgetController(FAwWidgetControllerParams(this->GetController(), nullptr, AttributeComp, nullptr));
 						AIHealthBar->AddToViewport();
 					}
 					OnPawnSeen(Cast<APawn>(InstigatorActor));

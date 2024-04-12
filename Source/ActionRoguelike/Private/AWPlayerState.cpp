@@ -70,11 +70,20 @@ bool AAWPlayerState::RemoveScores(int32 v)
 
 UAWAttributeComp* AAWPlayerState::GetPlayerAttribute() const
 {
-	return PlayerAttribute;
+	return PlayerAttributeComp;
+}
+
+UAwActionComponent* AAWPlayerState::GetPlayerAction() const
+{
+	return PlayerActionComp;
 }
 
 AAWPlayerState::AAWPlayerState()
 {
-	PlayerAttribute = CreateDefaultSubobject<UAWAttributeComp>(TEXT("PlayerAttribute"));
-	PlayerAttribute->GetAttributeSet()->SetOwningActor();
+	PlayerAttributeComp = CreateDefaultSubobject<UAWAttributeComp>(TEXT("PlayerAttributeComp"));
+	PlayerAttributeComp->GetAttributeSet()->SetOwningActor();
+	
+	PlayerActionComp = CreateDefaultSubobject<UAwActionComponent>(TEXT("PlayerActionComp"));
+	PlayerActionComp->SetOwningActor();
+	
 }

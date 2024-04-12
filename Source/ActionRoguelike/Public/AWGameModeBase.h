@@ -19,7 +19,7 @@ class ACTIONROGUELIKE_API AAWGameModeBase : public AGameModeBase
 	GENERATED_BODY()
 
 private:
-
+	
 	int SpawnMaxNum = 3;
 	
 protected:

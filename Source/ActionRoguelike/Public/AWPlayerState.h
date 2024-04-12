@@ -6,6 +6,7 @@
 #include "AwCharacter.h"
 #include "GameFramework/PlayerState.h"
 #include "..\Public\MyGAS/AWAttributeComp.h"
+#include"MyGAS/AwActionComponent.h"
 #include "AWPlayerState.generated.h"
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_FourParams(FOnPlayerStateChange,AAwCharacter*,AwPlayer,int32,ItemTpye,int32,NewVal,int32,Delta);
@@ -23,10 +24,13 @@ protected:
 	int32 Scores = 0;
 
 	UPROPERTY(BlueprintReadOnly,Category="PlayerAttribute")
-	TObjectPtr<UAWAttributeComp> PlayerAttribute = nullptr;
-	
+	TObjectPtr<UAWAttributeComp> PlayerAttributeComp = nullptr;
+
+	UPROPERTY(BlueprintReadOnly,Category="PlayerAttribute")
+	TObjectPtr<UAwActionComponent> PlayerActionComp = nullptr;
 public:
 	
+	AAWPlayerState();
 
 	UFUNCTION(BlueprintCallable,Category="Credits&Scores")
 	int32 GetCredits() const;
@@ -45,5 +49,8 @@ public:
 
 	UFUNCTION(BlueprintCallable,Category="PlayerAttribute")
 	inline  UAWAttributeComp* GetPlayerAttribute() const;
-	AAWPlayerState();
+
+	UFUNCTION(BlueprintCallable,Category="PlayerAttribute")
+	inline  UAwActionComponent* GetPlayerAction() const;
+	
 };

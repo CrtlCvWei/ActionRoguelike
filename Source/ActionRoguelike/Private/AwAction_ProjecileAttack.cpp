@@ -14,6 +14,7 @@ void UAwAction_ProjecileAttack::StartAction_Implementation(AActor* Instigator)
 
 	if (this->ProjectileClass && AttackAni)
 	{
+		bIsRunning = true;
 		// Attac Animation
 		AAwCharacter* Player = Cast<AAwCharacter>(Instigator);
 		if (Player->GetIsClimbing() || Player->GetCharacterMovement()->IsFalling())
@@ -38,7 +39,7 @@ void UAwAction_ProjecileAttack::StartAction_Implementation(AActor* Instigator)
 		Delegate.BindUFunction(this, "StartActionTimeEnasped", Player);
 		if (ensure(GetWorld()))
 		{
-			if(AttackTimeDelay > 0.f)
+			if (AttackTimeDelay > 0.f)
 				GetWorld()->GetTimerManager().SetTimer(ProjectileSpawnHandle, Delegate, AttackTimeDelay, false);
 			else if (AttackTimeDelay == 0.f)
 			{
@@ -53,8 +54,8 @@ void UAwAction_ProjecileAttack::StartAction_Implementation(AActor* Instigator)
 		Delegate.BindUFunction(this, "StartActionTimeEnasped", Instigator);
 		if (ensure(GetWorld()))
 		{
-			if(AttackTimeDelay > 0.f)
-			GetWorld()->GetTimerManager().SetTimer(ProjectileSpawnHandle, Delegate, AttackTimeDelay, false);
+			if (AttackTimeDelay > 0.f)
+				GetWorld()->GetTimerManager().SetTimer(ProjectileSpawnHandle, Delegate, AttackTimeDelay, false);
 			else if (AttackTimeDelay == 0.f)
 			{
 				StartActionTimeEnasped(Instigator);
@@ -87,9 +88,9 @@ void UAwAction_ProjecileAttack::StartActionTimeEnasped(AActor* Instigator)
 		/** Actor will spawn in desired location, regardless of collisions. */
 		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 		SpawnParams.Instigator = nullptr;
+		GetWorld()->SpawnActor<AActor>(ProjectileClass, LocaTM, SpawnParams);
 	}
 	// Spawn the projectile (Magic balls or any other things...)
-	GetWorld()->SpawnActor<AActor>(ProjectileClass, LocaTM, SpawnParams);
 	StopAction_Implementation(Instigator);
 }
 

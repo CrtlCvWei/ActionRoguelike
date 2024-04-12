@@ -3,11 +3,13 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameplayTagContainer.h"
-#include "UObject/NoExportTypes.h"
-#include "AwActionComponent.h"
+#include "MyGAS/AwActionEffect.h"
+#include "MyGAS/AwAttributeSet.h"
 #include "AwAction.generated.h"
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnAwActionCoolDownStartSignture, UAwAction*,Action,float,CoolDownTime);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnAwActionCoolDownEndSignture, UAwAction*,Action);
+struct FAwAttributeData;
 /**
  * 
  */
@@ -16,44 +18,63 @@ class UAwAction : public UObject
 {
 	GENERATED_BODY()
 	
+	
+	FOnAwActionCoolDownStartSignture OnCoolDownStart;
+
+	FOnAwActionCoolDownEndSignture OnCoolDownEnd;
+	
 protected:
-	UPROPERTY(EditAnywhere,Category="Idnetify")
+	UPROPERTY(EditAnywhere, Category="Idnetify")
 	FName ActionName;
 
-	UPROPERTY(EditAnywhere,Category="Idnetify")
-	FGameplayTag ActionTag;
-	
+	bool bIsRunning = false;
+
 	/* Cool Down Sys */
 	UPROPERTY()
 	FTimerHandle CoolDownTimerHandle;
+	
+	UPROPERTY(EditAnywhere,BlueprintReadOnly, Category="CoolDown")
+	FAwAttributeData CoolDownTimeAttributeData;
 
-	UPROPERTY(EditAnywhere,Category="Cost")
-	float Cost = 0.f;
-	
-	UPROPERTY(EditAnywhere,Category="CoolDown")
-	float CoolDownTime = 1.f;
-	
-	UPROPERTY(EditAnywhere,Category="Tags")
+	UPROPERTY(EditAnywhere,BlueprintReadOnly, Category="Level")
+	int32 AbilityLevel = 1;
+
+	UPROPERTY(EditAnywhere,BlueprintReadOnly, Category="Cost")
+	FAwAttributeData CostAttributeData;
+
+	UPROPERTY(EditAnywhere, Category="GamePlay Effect")
+	TArray<TSubclassOf<UAwActionEffect>> Effects;
+
+	UPROPERTY(EditAnywhere, Category="Tags")
 	FGameplayTagContainer GrandTags;
-	UPROPERTY(EditAnywhere,Category="Tags")
+	UPROPERTY(EditAnywhere, Category="Tags")
 	FGameplayTagContainer BlockTags;
-	
-public:
+	UPROPERTY(EditAnywhere, Category="Idnetify")
+	FGameplayTag ActionTag;
 
-	UFUNCTION(Blueprintable,Category = "Action")
+	UFUNCTION(BlueprintCallable)
+	void InitAtt();
+
+public:
+	UAwAction();
+
+	UFUNCTION(Blueprintable, Category = "Action")
 	UAwActionComponent* GetOwningComponent() const;
-	
-	UFUNCTION(BlueprintNativeEvent,Category="Action")
+
+	UFUNCTION(BlueprintCallable, Category="Action")
+	int32 GetAbilityLevel() const { return AbilityLevel; }
+
+	UFUNCTION(BlueprintNativeEvent, Category="Action")
 	void StartAction(AActor* Instigator);
 
-	UFUNCTION(BlueprintNativeEvent,Category="Action")
+	UFUNCTION(BlueprintNativeEvent, Category="Action")
 	void StopAction(AActor* Instigator);
 
 	UFUNCTION()
-	FName GetActionName () const;
+	FName GetActionName() const;
 
 	UFUNCTION()
-	void CoolDownOver() const;
+	void CoolDownOver();
 
 	UFUNCTION()
 	UWorld* GetWorld() const override;
@@ -63,4 +84,10 @@ public:
 
 	UFUNCTION()
 	bool CheckActionAvailable(AActor* Instigator) const;
+
+	FOnAwActionCoolDownStartSignture& GetCoolDownStartDelegate(){ return OnCoolDownStart; };
+	FOnAwActionCoolDownEndSignture& GetCoolDownEndDelegate(){ return OnCoolDownEnd;}
+		
+	UFUNCTION(BlueprintCallable)
+	TArray<TSubclassOf<UAwActionEffect>>& GetActionEffect();
 };

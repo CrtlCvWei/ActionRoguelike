@@ -8,10 +8,6 @@
 #include "AWHealPoint.generated.h"
 
 class UAWAttributeComp;
-
-// DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FbeUsed, AActor*, InstigatorActor, UAWAttributeComp*,
-//                                              AttributeComp);
-
 UCLASS()
 class AAWHealPoint : public AAWPowerUpActorBase
 {

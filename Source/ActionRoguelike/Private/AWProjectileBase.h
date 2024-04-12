@@ -3,14 +3,17 @@
 #pragma once
 
 #include "CoreMinimal.h"
-
+#include "Templates/SharedPointer.h"
 #include "GameFramework/Actor.h"
+#include "MyGAS/AwActionEffect.h"
 #include "AWProjectileBase.generated.h"
 
 class UNiagaraComponent;
 class UProjectileMovementComponent;
 class USphereComponent;
 class USoundCue;
+struct FAwGameplayEffectContextHandle;
+
 
 UCLASS()
 class AAWProjectileBase : public AActor
@@ -29,6 +32,8 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Damage")
 	float damage = 10;
 
+	TSharedPtr<FAwGameplayEffectContextHandle> EffectContext;
+	
 	UPROPERTY(EditDefaultsOnly, Category = "Effects|Shake")
 	TSubclassOf<UCameraShakeBase> ImpactShake;
 
