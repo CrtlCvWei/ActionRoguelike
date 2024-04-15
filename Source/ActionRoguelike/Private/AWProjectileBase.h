@@ -28,11 +28,13 @@ public:
 	// Sets default values for this actor's properties
 	AAWProjectileBase();
 
+	bool SetEffectContext(const FAwGameplayEffectContextHandle InEffectContext);
+
 protected:
 	UPROPERTY(EditAnywhere, Category = "Damage")
 	float damage = 10;
 
-	TSharedPtr<FAwGameplayEffectContextHandle> EffectContext;
+	TSharedPtr<FAwGameplayEffectContextHandle> EffectContext = nullptr;
 	
 	UPROPERTY(EditDefaultsOnly, Category = "Effects|Shake")
 	TSubclassOf<UCameraShakeBase> ImpactShake;
@@ -59,6 +61,9 @@ protected:
 	UPROPERTY(VisibleAnywhere, Category="Sound")
 	UAudioComponent* VanishAudio;
 
+	UFUNCTION()
+	virtual void AwGamePlayEffectImpact(AActor* Effector);
+	
 	UFUNCTION(Blueprintable,BlueprintNativeEvent)
 	void OnComponentHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp,
 	                            FVector NormalImpluse, const FHitResult& Hit);
@@ -81,5 +86,4 @@ protected:
 
 public:
 	// Called every frame
-	virtual void Tick(float DeltaTime) override;
 };

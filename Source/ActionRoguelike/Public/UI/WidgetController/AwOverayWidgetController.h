@@ -11,7 +11,6 @@
  */
 
 
-
 UCLASS()
 class ACTIONROGUELIKE_API UAwOverayWidgetController : public UAwWidgetController
 {
@@ -19,27 +18,43 @@ class ACTIONROGUELIKE_API UAwOverayWidgetController : public UAwWidgetController
 
 protected:
 	UPROPERTY(BlueprintAssignable)
-	FHealthChangeUISignture OnHealthChangeForUI;
+	FHealthChangeUISignture OnHealthBaseFChangeorUI;
+	UPROPERTY(BlueprintAssignable)
+	FHealthChangeUISignture OnHealthCurrFChangeorUI;
 
 	UPROPERTY(BlueprintAssignable)
-	FMaxHealthChangeUISignture OnMaxHealthChangeForUI;
-	
+	FMaxHealthChangeUISignture OnMaxHealthBaseChangeForUI;
 	UPROPERTY(BlueprintAssignable)
-	FManaChangeUISignture OnManaChangeForUI;
+	FMaxHealthChangeUISignture OnMaxHealthCurrChangeForUI;
 
 	UPROPERTY(BlueprintAssignable)
-	FMaxManaChangeUISignture OnMaxManaChangeForUI;
+	FManaChangeUISignture OnManaBaseChangeForUI;
+	UPROPERTY(BlueprintAssignable)
+	FManaChangeUISignture OnManaCurrChangeForUI;
+
+	UPROPERTY(BlueprintAssignable)
+	FMaxManaChangeUISignture OnMaxManaBaseChangeForUI;
+	UPROPERTY(BlueprintAssignable)
+	FMaxManaChangeUISignture OnMaxManaCurrChangeForUI;
 
 
 	UFUNCTION()
-	void HealthChangeForUI(float NewVal,float OldVal) const;
+	void HealthBaseChangeForUI(float NewVal, float OldVal) const;
 	UFUNCTION()
-	void MaxHealthChangeForUI(float NewVal,float OldVal) const;
+	void HealthCurrChangeForUI(float NewVal, float OldVal) const;
 	UFUNCTION()
-	void ManaChangeForUI(float NewVal,float OldVal) const;
+	void MaxHealthBaseChangeForUI(float NewVal, float OldVal) const;
 	UFUNCTION()
-	void MaxManaChangeForUI(float NewVal,float OldVal) const;
-	
+	void MaxHealthCurrChangeForUI(float NewVal, float OldVal) const;
+	UFUNCTION()
+	void ManaBaseChangeForUI(float NewVal, float OldVal) const;
+	UFUNCTION()
+	void ManaCurrChangeForUI(float NewVal, float OldVal) const;
+	UFUNCTION()
+	void MaxManaBaseChangeForUI(float NewVal, float OldVal) const;
+	UFUNCTION()
+	void MaxManaCurrChangeForUI(float NewVal, float OldVal) const;
+
 public:
 	virtual void BindCallBacksToDependencies() override;
 	virtual void BroadcastInitVals() override;

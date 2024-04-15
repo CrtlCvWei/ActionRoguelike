@@ -18,7 +18,8 @@ enum DurationPolicy
 {
 	Duration,
 	Instant,
-	infinite
+	infinite,
+	Periodic 
 };
 
 /**
@@ -26,7 +27,7 @@ enum DurationPolicy
  * Games can subclass this structure and add game-specific information
  * It is passed throughout effect execution so it is a great place to track transient information about an execution
  */
-USTRUCT(BlueprintType)
+USTRUCT(BlueprintType,Blueprintable)
 struct ACTIONROGUELIKE_API FAwGameplayEffectContext
 {
 	GENERATED_BODY()
@@ -219,6 +220,29 @@ struct ACTIONROGUELIKE_API FAwGameplayEffectContextHandle
 	void Clear() { Data.Reset(); }
 	bool IsValid() const { return Data.IsValid(); }
 
+	bool operator==(const FAwGameplayEffectContextHandle& Other) const
+	{
+		return Data == Other.Data;
+	}
+	bool operator!=(const FAwGameplayEffectContextHandle& Other) const
+	{
+		return Data != Other.Data;
+	}
+	
+	// copy assignment
+	FAwGameplayEffectContextHandle& operator=(const FAwGameplayEffectContextHandle& Other)
+	{
+		if(Other != *this)
+			Data = MakeShared<FAwGameplayEffectContext>(*Other.Data);
+		return *this;
+	}
+	FAwGameplayEffectContextHandle& operator=(const FAwGameplayEffectContextHandle* Other)
+	{
+		if(*Other != *this)
+			Data = MakeShared<FAwGameplayEffectContext>(*Other->Data);
+		return *this;
+	}
+	
 	/** Returns Raw effet context, may be null */
 	FAwGameplayEffectContext* Get()
 	{
@@ -256,6 +280,7 @@ struct ACTIONROGUELIKE_API FAwGameplayEffectContextHandle
 		}
 	}
 
+
 private:
 	friend FAwGameplayEffectContextHandleAccessorForNetSerializer;
 
@@ -278,10 +303,10 @@ class ACTIONROGUELIKE_API UAwActionEffect : public UObject
 	GENERATED_BODY()
 
 	UPROPERTY(EditAnywhere, Category="Effect")
-	TMap<FName, float> EffectMap; // FNAME is the Attribute's name to be effect && float is the value
+	TMap<FString, float> EffectMap; // FNAME is the Attribute's name to be effect && float is the value
 
 	UPROPERTY(EditAnywhere, Category="Effect")
-	TMap<FName, float> EffectMapForAction; // FNAME is the Action's Property's name to be effect && float is the value
+	TMap<FString, float> EffectMapForAction; // FNAME is the Action's Property's name to be effect && float is the value
 	
 	UPROPERTY(EditAnywhere, Category="Effect")
 	float Duration = 1.f;
@@ -320,14 +345,14 @@ public:
 	void SetPeriod(const float P) { Period = P; }
 	
 	UFUNCTION(BlueprintCallable)
-	const TMap<FName, float>&  GetEffectMap() { return EffectMap; }
+	const TMap<FString, float>&  GetEffectMap() { return EffectMap; }
 
 	UFUNCTION(BlueprintCallable)
-	void SetEffectMap(const FName& Name, const float Value);
+	void SetEffectMap(const FString& Name, const float Value);
 
 	UFUNCTION(BlueprintCallable)
-	const TMap<FName, float>&  GetEffectMapForAction() { return EffectMapForAction; }
+	const TMap<FString, float>&  GetEffectMapForAction() { return EffectMapForAction; }
 	
 	UFUNCTION(BlueprintCallable)
-	void SetEffectMapForAction(const FName& Name, const float Value);
+	void SetEffectMapForAction(const FString& Name, const float Value);
 };

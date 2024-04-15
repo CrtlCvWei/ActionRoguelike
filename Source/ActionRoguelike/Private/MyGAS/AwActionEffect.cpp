@@ -176,7 +176,7 @@ bool FAwGameplayEffectContext::HasOrigin() const
 
 /*		*****************************		*/
 
-void UAwActionEffect::SetEffectMap(const FName& Name, const float Value)
+void UAwActionEffect::SetEffectMap(const FString& Name, const float Value)
 {
 	if (EffectMap.FindChecked(Name))
 	{
@@ -186,9 +186,9 @@ void UAwActionEffect::SetEffectMap(const FName& Name, const float Value)
 	EffectMap.Add(Name, Value);
 }
 
-void UAwActionEffect::SetEffectMapForAction(const FName& Name, const float Value)
+void UAwActionEffect::SetEffectMapForAction(const FString& Name, const float Value)
 {
-	if (Name != FName("CoolDownTime") || Name != FName("Cost") || Name != FName("AbilityLevel"))
+	if (Name != "CoolDownTime" || Name != "Cost" || Name != "AbilityLevel")
 		return;
 
 	if (EffectMapForAction.FindChecked(Name))

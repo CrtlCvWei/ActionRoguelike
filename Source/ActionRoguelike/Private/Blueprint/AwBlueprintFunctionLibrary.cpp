@@ -49,16 +49,14 @@ UAwActionComponent* UAwBlueprintFunctionLibrary::GetAwActionComponent(AActor* Ac
 
 	//May in the PlaerState
 	const AAwCharacter* AC = Cast<AAwCharacter>(Actor);
-	if(!ensureAlways(AC))
+	if(AC)
 	{
-		return nullptr;
+		const AAWPlayerState* AwPS = Cast<AAWPlayerState>(AC->GetPlayerState());
+		if (AwPS)
+		{
+			return Cast<UAwActionComponent>(AwPS->GetPlayerAction());
+		}
 	}
-	const AAWPlayerState* AwPS = Cast<AAWPlayerState>(AC->GetPlayerState());
-	if (AwPS)
-	{
-		return Cast<UAwActionComponent>(AwPS->GetPlayerAction());
-	}
-
 	if(FindOther)
 	{
 		// Fall back to a component search to better support BP-only actors

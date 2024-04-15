@@ -5,7 +5,7 @@
 
 #include "AwCharacter.h"
 #include "AWPlayerState.h"
-#include "..\Public\MyGAS/AWAttributeComp.h"
+#include "AI/AWAICharacter.h"
 #include "Components/AudioComponent.h"
 
 
@@ -19,6 +19,32 @@ AAWMagicProject::AAWMagicProject()
 
 void AAWMagicProject::Init_Paramters()
 {
+}
+
+void AAWMagicProject::AwGamePlayEffectImpact(AActor* Effector)
+{
+	if (!EffectContext || !EffectContext.Get())
+		return;
+	if (AAwCharacter* Player = Cast<AAwCharacter>(Effector))
+	{
+		UAwActionComponent* ActionComponent = Player->GetOwningAction();
+		UAWAttributeComp* Attribute = Player->GetOwningAttribute();
+		if (ensureAlways(ActionComponent))
+		{
+			if (EffectContext->Get())
+				ActionComponent->ApplyEffect(*(EffectContext->Get()), Attribute);
+		}
+	}
+	else if (auto AIC = Cast<AAWAICharacter>(Effector))
+	{
+		UAwActionComponent* ActionComponent = AIC->FindComponentByClass<UAwActionComponent>();
+		UAWAttributeComp* Attribute = AIC->GetAttributeComp();
+		if (ensureAlways(ActionComponent))
+		{
+			if (EffectContext->Get())
+				ActionComponent->ApplyEffect(*(EffectContext->Get()), Attribute);
+		}
+	}
 }
 
 
@@ -42,36 +68,16 @@ void AAWMagicProject::OnBeginOverlap_Implementation(UPrimitiveComponent* Overlap
                                                     UPrimitiveComponent* OtherComp, int32 OtherBodyIndex,
                                                     bool bFromSweep, const FHitResult& SweepResult)
 {
-	if (OtherActor && OtherActor != this->GetInstigator())
+	if (!OtherActor)
+		return;
+	if (OtherActor != this->GetInstigator())
 	{
-		if (AAwCharacter* Player = Cast<AAwCharacter>(OtherActor))
+		// UE_LOG(LogTemp, Error, TEXT("ACTOR COMP: %s , %p"), *OtherComp->GetName(), &OtherComp);
+		AwGamePlayEffectImpact(OtherActor);
+		if (this->Destroy())
 		{
-			// Player Attribute is in PlayerState
-			APlayerController* PC = Cast<APlayerController>(Player->GetController());
-			AAWPlayerState* AwPS = Cast<AAWPlayerState>(PC->PlayerState);
-			UAWAttributeComp* Attribute = AwPS->GetPlayerAttribute();
-			if (Attribute->SetAttribute(FName("Health"), -20.f, this->GetInstigator()))
-			{
-				if (this->Destroy())
-				{
-					if (VanishAudio && VanishAudio->Sound)
-						VanishAudio->Play();
-				}
-				
-			}
-		}
-		else
-		{
-			// AI
-			UAWAttributeComp* Attribute = OtherActor->FindComponentByClass<UAWAttributeComp>();
-			if (Attribute->SetHealth(-20, this->GetInstigator()))
-			{
-				if (this->Destroy())
-				{
-					if (VanishAudio && VanishAudio->Sound)
-						VanishAudio->Play();
-				}
-			}
+			if (VanishAudio && VanishAudio->Sound)
+				VanishAudio->Play();
 		}
 	}
 }

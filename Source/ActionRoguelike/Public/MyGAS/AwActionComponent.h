@@ -10,7 +10,7 @@
 
 
 class UAwAction;
-
+class UAWAttributeComp;
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
 class UAwActionComponent : public UActorComponent
 {
@@ -19,7 +19,7 @@ class UAwActionComponent : public UActorComponent
 	UPROPERTY()
 	AActor* OwningActor;
 
-	void ApplyInstanceEffects(UAwActionEffect* Effect,AActor* Insigator);
+	void ApplyInstanceEffects(UAwActionEffect* Effect,AActor* Insigator,UAWAttributeComp* AttributeComp);
 	
 protected:
 	UPROPERTY()
@@ -49,15 +49,17 @@ public:
 	bool RemoveAction(UAwAction* ActionToRemove);
 
 	UFUNCTION(BlueprintCallable, Category="Effects")
-	bool ApplyEffect(const FAwGameplayEffectContext& EffectContext);
+	bool ApplyEffect(const FAwGameplayEffectContext& EffectContext, UAWAttributeComp* AttributeComp);
 
 	UFUNCTION(BlueprintCallable, Category="Actions")
 	void StartActionByName(AActor* Instigator, FName ActionName);
 	UFUNCTION(BlueprintCallable, Category="Actions")
 	void StopActionByName(AActor* Instigator, FName ActionName);
-
+	UFUNCTION(Blueprintable)
+	UAwAction* GetActionByName(FName ActionName);
+	
 	UFUNCTION(BlueprintCallable, Category = "GameplayEffects")
-	FAwGameplayEffectContextHandle MakeEffectContex(AActor* Causer);
+	FAwGameplayEffectContextHandle MakeEffectContex(AActor* Causer,UAwAction* Action);
 
 	UFUNCTION(BlueprintCallable)
 	bool BindCoolDownDelegate(FName ActionName,UAwUserWidget* Widget);

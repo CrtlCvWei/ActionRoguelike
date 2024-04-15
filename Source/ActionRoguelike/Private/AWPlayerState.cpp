@@ -81,9 +81,9 @@ UAwActionComponent* AAWPlayerState::GetPlayerAction() const
 AAWPlayerState::AAWPlayerState()
 {
 	PlayerAttributeComp = CreateDefaultSubobject<UAWAttributeComp>(TEXT("PlayerAttributeComp"));
-	PlayerAttributeComp->GetAttributeSet()->SetOwningActor();
-	
 	PlayerActionComp = CreateDefaultSubobject<UAwActionComponent>(TEXT("PlayerActionComp"));
-	PlayerActionComp->SetOwningActor();
-	
+	// PlayerActionComp->SetOwningActor();
+	// PlayerAttributeComp->GetAttributeSet()->SetOwningActor();
+	// PlayerAttributeComp->SetOwningActor();
+	//
 }

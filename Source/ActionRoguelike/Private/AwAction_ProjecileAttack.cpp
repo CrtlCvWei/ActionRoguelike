@@ -4,7 +4,9 @@
 #include "AwAction_ProjecileAttack.h"
 
 #include "AwCharacter.h"
+#include "AWProjectileBase.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "MyGAS/AwActionComponent.h"
 
 
 void UAwAction_ProjecileAttack::StartAction_Implementation(AActor* Instigator)
@@ -17,11 +19,6 @@ void UAwAction_ProjecileAttack::StartAction_Implementation(AActor* Instigator)
 		bIsRunning = true;
 		// Attac Animation
 		AAwCharacter* Player = Cast<AAwCharacter>(Instigator);
-		if (Player->GetIsClimbing() || Player->GetCharacterMovement()->IsFalling())
-		{
-			StopAction_Implementation(Instigator);
-			return;
-		}
 		if (Player->GetVelocity() == FVector::ZeroVector)
 		{
 			FVector CameraLocation;
@@ -68,6 +65,7 @@ void UAwAction_ProjecileAttack::StartActionTimeEnasped(AActor* Instigator)
 {
 	FTransform LocaTM;
 	FActorSpawnParameters SpawnParams;
+	AActor* Projectile = nullptr;
 	if (AAwCharacter* Player = Cast<AAwCharacter>(Instigator))
 	{
 		const FVector HandLocation = Player->GetMesh()->GetSocketLocation(HandSpawnSocketName);
@@ -79,7 +77,8 @@ void UAwAction_ProjecileAttack::StartActionTimeEnasped(AActor* Instigator)
 		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 		SpawnParams.Instigator = Player;
 		// Spawn the projectile (Magic balls or any other things...)
-		GetWorld()->SpawnActor<AActor>(ProjectileClass, LocaTM, SpawnParams);
+		Projectile =  GetWorld()->SpawnActor<AActor>(ProjectileClass, LocaTM, SpawnParams);
+		// 
 	}
 	else
 	{
@@ -88,9 +87,22 @@ void UAwAction_ProjecileAttack::StartActionTimeEnasped(AActor* Instigator)
 		/** Actor will spawn in desired location, regardless of collisions. */
 		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 		SpawnParams.Instigator = nullptr;
-		GetWorld()->SpawnActor<AActor>(ProjectileClass, LocaTM, SpawnParams);
+		Projectile = GetWorld()->SpawnActor<AActor>(ProjectileClass, LocaTM, SpawnParams);
 	}
-	// Spawn the projectile (Magic balls or any other things...)
+	// Set Effects
+	if(Effects.Num() > 0)
+	{
+		// TODO : TRY USE EFFECTS[0] FOR TEST
+		
+		// UAwActionEffect* Effects_ins =  Effects[0].GetDefaultObject();
+		// Projectile is null ?
+		FAwGameplayEffectContextHandle GamePlayEffect =  GetOwningComponent()->MakeEffectContex(Projectile,this);
+		auto ProjecileBase = Cast<AAWProjectileBase>(Projectile);
+		if(ProjecileBase)
+		{
+			ProjecileBase->SetEffectContext(GamePlayEffect);
+		}
+	}
 	StopAction_Implementation(Instigator);
 }
 
@@ -128,6 +140,19 @@ UAwAction_ProjecileAttack::UAwAction_ProjecileAttack()
 {
 	HandSpawnSocketName = "Right-Wist";
 	AttackTimeDelay = 1.f;
+}
+
+bool UAwAction_ProjecileAttack::CheckActionAvailable(AActor* Instigator) const
+{
+	AAwCharacter* Player = Cast<AAwCharacter>(Instigator);
+	if(Player)
+	{
+		if (Player->GetIsClimbing() || Player->GetCharacterMovement()->IsFalling())
+		{
+			return false;
+		}
+	}
+	return  Super::CheckActionAvailable(Instigator);
 }
 
 void UAwAction_ProjecileAttack::StopAction_Implementation(AActor* Instigator)

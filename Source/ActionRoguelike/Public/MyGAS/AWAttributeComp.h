@@ -3,11 +3,10 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "AttributeSet.h"
+
 #include "Delegates/DelegateInstancesImpl.h"
 #include "Components/ActorComponent.h"
 #include "MyGAS/AwAttributeSet.h"
-#include <functional>
 #include "AWAttributeComp.generated.h"
 
 UDELEGATE(BlueprintAuthorityOnly)
@@ -22,6 +21,10 @@ class ACTIONROGUELIKE_API UAWAttributeComp : public UActorComponent
 
 
 private:
+
+	UPROPERTY()
+	AActor* OwningActor = nullptr;
+	
 	UPROPERTY(BlueprintCallable)
 	FOnAttributeChangeSignture OnChange;
 
@@ -33,6 +36,7 @@ private:
 	UPROPERTY()
 	TMap<FName, FOnAttributeChangeSignture> AllAttributeChangeMap;
 
+	UFUNCTION()
 	inline  FAwAttributeData GetAttributeData(const FName AttributeName) const;
 	
 public:
@@ -49,16 +53,39 @@ public:
 	bool isAlive() const;
 
 	UFUNCTION(BlueprintCallable)
-	float GetHealth() const { return AttributeSet->GetHealth(); }
+	float GetHealth() const
+	{
+		UE_LOG(LogTemp, Warning, TEXT("GetHealthBase: %f"),AttributeSet->GetHealthBase() );
+		UE_LOG(LogTemp, Warning, TEXT("GetHealthCurrent: %f"),AttributeSet->GetHealthCurrent() );
+		return AttributeSet->GetHealthBase() + AttributeSet->GetHealthCurrent();
+	}
 
 	UFUNCTION(BlueprintCallable)
-	float GetMaxHealth() const { return AttributeSet->GetMaxHealth(); }
+	float GetMaxHealth() const { return AttributeSet->GetMaxHealthBase() + AttributeSet->GetMaxHealthCurrent(); }
+	
+	UFUNCTION(BlueprintCallable)
+	float GetMana() const { return AttributeSet->GetManaBase() + AttributeSet->GetManaCurrent(); }
+
+	
+	UFUNCTION(BlueprintCallable)
+	float GetMaxMana() const { return AttributeSet->GetMaxManaBase() + AttributeSet->GetMaxManaCurrent(); }
+
 	
 	UFUNCTION(BlueprintCallable)
 	inline  float GetAttributeBase(FName AttributeName) const;
 
 	UFUNCTION(BlueprintCallable)
 	inline  float GetAttributeCurrent(FName AttributeName) const;
+
+	UFUNCTION(BlueprintCallable)
+	float GetActualAttribute(FName AttributeName) const;
+
+	UFUNCTION()
+	AActor* GetOwningActor() const { return OwningActor; }
+	
+	UFUNCTION(Blueprintable)
+	bool SetOwningActor();
+	
 	
 	UFUNCTION(BlueprintCallable)
 	UAwAttributeSet* GetAttributeSet() const { return AttributeSet; }
@@ -80,17 +107,21 @@ public:
 
 	template <class UserClass>
 	UFUNCTION()
-	void AttributeChangeBind(const FName Name, UserClass* Object,void (UserClass::*Function)(AActor*,UAWAttributeComp*, float, float),FString&& FuncName)
+	void AttributeChangeBind(const FString Name, UserClass* Object,void (UserClass::*Function)(AActor*,UAWAttributeComp*, float, float),FString&& FuncName)
 	{
+		if( Name== FString() || !Function)
+			return;
 	    // AttributeChangeBind("Health", this, &AAWAICharacter::OnHealthChange,"&AAWAICharacter::OnHealthChange");
-		if (AllAttributeChangeMap.Contains(Name))
+		if (AllAttributeChangeMap.Contains(FName(*Name)))
 		{
 			FName FunctionName = STATIC_FUNCTION_FNAME(*FuncName); // *FString is TCHAR
-			AllAttributeChangeMap[Name].__Internal_AddUniqueDynamic(Object, Function,FunctionName);// Add the function to the delegate
+			AllAttributeChangeMap[FName(*Name)].__Internal_AddUniqueDynamic(Object, Function,FunctionName);// Add the function to the delegate
+			//debug
+			// UE_LOG(LogTemp, Warning, TEXT("AttributeChangeBind: %s found in AllAttributeChangeMap"),*Name.ToString());
 		}
 		else
 		{
-			UE_LOG(LogTemp, Warning, TEXT("AttributeChangeBind: %s not found in AllAttributeChangeMap"),*Name.ToString());
+			UE_LOG(LogTemp, Warning, TEXT("AttributeChangeBind: %s not found in AllAttributeChangeMap"),*Name);
 		}
 	}
 		

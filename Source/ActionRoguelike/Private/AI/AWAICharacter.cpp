@@ -26,16 +26,22 @@ void AAWAICharacter::Init_Paramters()
 	GetMesh()->SetGenerateOverlapEvents(true);
 
 	AttributeComp = CreateDefaultSubobject<UAWAttributeComp>(TEXT("AttributeComp"));
+	ActionComp = CreateDefaultSubobject<UAwActionComponent>(TEXT("ActionComp"));
+	ensure(ActionComp->SetOwningActor());
+	ensure(AttributeComp->SetOwningActor());
 	RewardComp = CreateDefaultSubobject<UAWReward>(TEXT("RewardComp"));
 	RewardComp->Initialize(100, false);
 	SensingComp = CreateDefaultSubobject<UPawnSensingComponent>("SensingComp");
 
 }
 
+
+
 // Called when the game starts or when spawned
 void AAWAICharacter::BeginPlay()
 {
 	Super::BeginPlay();
+
 	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
 	if (ensure(this->AttributeComp))
 	{

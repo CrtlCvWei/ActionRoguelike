@@ -4,16 +4,15 @@
 
 #include "CoreMinimal.h"
 #include "AwAction.h"
-#include "AwAction_ProjecileAttack.generated.h"
+#include "AwAction_AIRangedAttack.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class UAwAction_ProjecileAttack : public UAwAction
+class ACTIONROGUELIKE_API UAwAction_AIRangedAttack : public UAwAction
 {
 	GENERATED_BODY()
-protected:
 	UPROPERTY(EditAnywhere,Category = "Attack")
 	TSubclassOf<AActor> ProjectileClass;
 
@@ -21,7 +20,7 @@ protected:
 	UAnimMontage* AttackAni;
 
 	UPROPERTY(EditAnywhere,Category = "Effects")
-	FName HandSpawnSocketName = "Muzzle_Front";
+	FName HandSpawnSocketName;
 
 	UPROPERTY(EditAnywhere,Category = "Effects")
 	UParticleSystem* CastingEffect;
@@ -29,17 +28,18 @@ protected:
 	UPROPERTY(EditAnywhere,Category = "Attack")
 	float AttackTimeDelay;
 
+	UPROPERTY()
+	AActor* Target;
+	
 	UFUNCTION()
 	void StartActionTimeEnasped(AActor* Instigator);
-	
-	FRotator GetProjectileRotation(ACharacter* Instigator,FVector HandLocation);
 public:
+
+	void SetTarget(AActor* NewTarget) { Target = NewTarget; }
 	
-	UAwAction_ProjecileAttack();
 	virtual  bool CheckActionAvailable(AActor* Instigator) const override;
 	virtual void  StartAction_Implementation(AActor* Instigator) override;
 	virtual void StopAction_Implementation(AActor* Instigator) override;
 	
-
-
+	
 };

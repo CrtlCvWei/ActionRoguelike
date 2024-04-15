@@ -12,6 +12,16 @@ UAwAction_BlackHoleAbilbity::UAwAction_BlackHoleAbilbity()
 {
 }
 
+bool UAwAction_BlackHoleAbilbity::CheckActionAvailable(AActor* Instigator) const
+{
+	AAwCharacter* Player = Cast<AAwCharacter>(Instigator);
+	if (Player->GetIsClimbing() || Player->GetCharacterMovement()->IsFalling())
+	{
+		return false;
+	}
+	return Super::CheckActionAvailable(Instigator);
+}
+
 void UAwAction_BlackHoleAbilbity::StartAction_Implementation(AActor* Instigator)
 {
 	Super::StartAction_Implementation(Instigator);
@@ -78,10 +88,23 @@ void UAwAction_BlackHoleAbilbity::StartAction_TimeElasped(ACharacter* Instigator
 			
 			FTimerDelegate Delegate;
 			Delegate.BindUFunction(this, "ExplosiveAndCauseDamage", Instigator, BlackHole);
-
+			
 			GetWorld()->GetTimerManager().SetTimer(ExplosiveTimerHandle,
 			                                       Delegate,
 			                                       ExplosiveTimeDelay, false);
+			if (Effects.Num() > 0)
+			{
+				// TODO : TRY USE EFFECTS[0] FOR TEST
+
+				// UAwActionEffect* Effects_ins =  Effects[0].GetDefaultObject();
+				// Projectile is null ?
+				FAwGameplayEffectContextHandle GamePlayEffect = GetOwningComponent()->MakeEffectContex(BlackHole, this);
+				auto ProjecileBase = Cast<AAWProjectileBase>(BlackHole);
+				if (ProjecileBase)
+				{
+					ProjecileBase->SetEffectContext(GamePlayEffect);
+				}
+			}
 		}
 	}
 	StopAction_Implementation(Instigator);
@@ -159,17 +182,7 @@ void UAwAction_BlackHoleAbilbity::ExplosiveAndCauseDamage(AActor* Instigator,AAc
 			// 
 			if (HitActor)
 			{
-				// IF Actor IS PAWN
-				if (Cast<APawn>(HitActor))
-				{
-					UAWAttributeComp* Attribute = Cast<UAWAttributeComp>(
-						HitActor->GetComponentByClass(UAWAttributeComp::StaticClass()));
-					if (Attribute)
-					{
-						// if(OtherActor->GetInstigator())
-						Attribute->SetHealth(-ExplosiveDamage, Instigator);
-					}
-				}
+				BlackHole->AwGamePlayEffectImpact(HitActor);
 			}
 		}
 	}

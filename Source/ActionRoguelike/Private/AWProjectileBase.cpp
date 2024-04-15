@@ -42,9 +42,21 @@ AAWProjectileBase::AAWProjectileBase()
 	this->Init_Paramters();
 }
 
+bool AAWProjectileBase::SetEffectContext(const FAwGameplayEffectContextHandle InEffectContext)
+{
+	EffectContext = MakeShared<FAwGameplayEffectContextHandle>(InEffectContext);
+	if(!EffectContext)
+		return false;
+	return true;
+}
+
+void AAWProjectileBase::AwGamePlayEffectImpact(AActor* Effector)
+{
+}
+
 
 void AAWProjectileBase::OnComponentHit_Implementation(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp,
-	FVector NormalImpluse, const FHitResult& Hit)
+                                                      FVector NormalImpluse, const FHitResult& Hit)
 {
 }
 
@@ -81,7 +93,4 @@ void AAWProjectileBase::Explode()
 }
 
 // Called every frame
-void AAWProjectileBase::Tick(float DeltaTime)
-{
-	Super::Tick(DeltaTime);
-}
+

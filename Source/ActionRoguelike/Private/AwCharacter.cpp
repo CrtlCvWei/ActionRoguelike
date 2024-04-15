@@ -33,11 +33,18 @@ void AAwCharacter::PostInitializeComponents()
 UAWAttributeComp* AAwCharacter::GetOwningAttribute() const
 {
 	APlayerController* PC = Cast<APlayerController>(GetController());
-	if(!ensure(PC))
+	// if(!ensure(PC))
+	if(!PC)
 		return nullptr;
 	AAWPlayerState* PS = PC->GetPlayerState<AAWPlayerState>();
-	if(!ensure(PS))
+	if(!(PS))
 		return  nullptr;
+	if(PS->GetPlayerAttribute()->GetOwningActor() != this)
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Red, "Player Attribute is not found And Try to set Owning Actor");
+		PS->GetPlayerAttribute()->SetOwningActor();
+		PS->GetPlayerAttribute()->GetAttributeSet()->SetOwningActor();
+	}
 	return PS->GetPlayerAttribute();
 }
 
@@ -49,6 +56,11 @@ UAwActionComponent* AAwCharacter::GetOwningAction() const
 	AAWPlayerState* PS = PC->GetPlayerState<AAWPlayerState>();
 	if(!ensure(PS))
 		return  nullptr;
+	if(PS->GetPlayerAction()->GetOwningActor() != this)
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Red, "Player Action is not found And Try to set Owning Actor");
+		PS->GetPlayerAction()->SetOwningActor();
+	}
 	return  PS->GetPlayerAction();;
 }
 
@@ -75,6 +87,8 @@ void AAwCharacter::Init_Paramters()
 
 	// INPUT 'F' to interact
 	InteractionComp = CreateDefaultSubobject<UAWInteractionComponent>("InteractionComp");
+
+	//GAS
 	
 	GetCharacterMovement()->MaxWalkSpeed = this->NormalMoveSpeed;
 	GetCharacterMovement()->GravityScale = this->GravityScale;

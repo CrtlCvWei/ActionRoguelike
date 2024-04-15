@@ -18,10 +18,50 @@ void UAwOverayWidgetController::BroadcastInitVals()
 		UE_LOG(LogTemp, Error, TEXT("AttributeSet is nullptr"));
 		return;
 	}
-	OnHealthChangeForUI.Broadcast(AttributeSet->GetHealth(), AttributeSet->GetHealth());
-	OnMaxHealthChangeForUI.Broadcast(AttributeSet->GetMaxHealth(), AttributeSet->GetMaxHealth());
-	OnManaChangeForUI.Broadcast(AttributeSet->GetMana(), AttributeSet->GetMana());
-	OnMaxManaChangeForUI.Broadcast(AttributeSet->GetMaxMana(), AttributeSet->GetMaxMana());
+	OnHealthBaseFChangeorUI.Broadcast(AttributeSet->GetHealthBase(), AttributeSet->GetHealthBase());
+	OnMaxHealthBaseChangeForUI.Broadcast(AttributeSet->GetMaxHealthBase(), AttributeSet->GetMaxHealthBase());
+	OnManaBaseChangeForUI.Broadcast(AttributeSet->GetManaBase(), AttributeSet->GetManaBase());
+	OnMaxManaBaseChangeForUI.Broadcast(AttributeSet->GetMaxManaBase(), AttributeSet->GetMaxManaBase());
+}
+
+void UAwOverayWidgetController::HealthBaseChangeForUI(float NewVal, float OldVal) const
+{
+	OnHealthBaseFChangeorUI.Broadcast(NewVal, OldVal);
+}
+
+void UAwOverayWidgetController::HealthCurrChangeForUI(float NewVal, float OldVal) const
+{
+	OnHealthCurrFChangeorUI.Broadcast(NewVal, OldVal);
+}
+
+void UAwOverayWidgetController::MaxHealthBaseChangeForUI(float NewVal, float OldVal) const
+{
+	OnMaxHealthBaseChangeForUI.Broadcast(NewVal, OldVal);
+}
+
+void UAwOverayWidgetController::MaxHealthCurrChangeForUI(float NewVal, float OldVal) const
+{
+	OnMaxHealthCurrChangeForUI.Broadcast(NewVal, OldVal);
+}
+
+void UAwOverayWidgetController::ManaBaseChangeForUI(float NewVal, float OldVal) const
+{
+	OnManaBaseChangeForUI.Broadcast(NewVal, OldVal);
+}
+
+void UAwOverayWidgetController::ManaCurrChangeForUI(float NewVal, float OldVal) const
+{
+	OnManaCurrChangeForUI.Broadcast(NewVal, OldVal);
+}
+
+void UAwOverayWidgetController::MaxManaBaseChangeForUI(float NewVal, float OldVal) const
+{
+	OnMaxManaBaseChangeForUI.Broadcast(NewVal, OldVal);
+}
+
+void UAwOverayWidgetController::MaxManaCurrChangeForUI(float NewVal, float OldVal) const
+{
+	OnMaxManaCurrChangeForUI.Broadcast(NewVal, OldVal);
 }
 
 void UAwOverayWidgetController::BindCallBacksToDependencies()
@@ -41,31 +81,15 @@ void UAwOverayWidgetController::BindCallBacksToDependencies()
 	}
 
 	// My Blinding to the Attribute Set
-	AttributeSet->GetAttributeChangeDelegate(FName("Health"),Current).AddUObject(this, &UAwOverayWidgetController::HealthChangeForUI);
-	AttributeSet->GetAttributeChangeDelegate(FName("MaxHealth"),Current).AddUObject(this, &UAwOverayWidgetController::MaxHealthChangeForUI);
-	AttributeSet->GetAttributeChangeDelegate(FName("Mana"),Current).AddUObject(this, &UAwOverayWidgetController::ManaChangeForUI);
-	AttributeSet->GetAttributeChangeDelegate(FName("MaxMana"),Current).AddUObject(this, &UAwOverayWidgetController::MaxManaChangeForUI);
-}
+	AttributeSet->GetAttributeChangeDelegate(FName("Health"),Base).AddUObject(this, &UAwOverayWidgetController::HealthBaseChangeForUI);
+	AttributeSet->GetAttributeChangeDelegate(FName("MaxHealth"),Base).AddUObject(this, &UAwOverayWidgetController::MaxHealthBaseChangeForUI);
+	AttributeSet->GetAttributeChangeDelegate(FName("Mana"),Base).AddUObject(this, &UAwOverayWidgetController::ManaBaseChangeForUI);
+	AttributeSet->GetAttributeChangeDelegate(FName("MaxMana"),Base).AddUObject(this, &UAwOverayWidgetController::MaxManaBaseChangeForUI);
 
-void UAwOverayWidgetController::HealthChangeForUI(float NewVal, float OldVal) const
-{
-	OnHealthChangeForUI.Broadcast(NewVal, OldVal);
+	AttributeSet->GetAttributeChangeDelegate(FName("Health"),Current).AddUObject(this, &UAwOverayWidgetController::HealthCurrChangeForUI);
+	AttributeSet->GetAttributeChangeDelegate(FName("MaxHealth"),Current).AddUObject(this, &UAwOverayWidgetController::MaxManaCurrChangeForUI);
+	AttributeSet->GetAttributeChangeDelegate(FName("Mana"),Current).AddUObject(this, &UAwOverayWidgetController::ManaCurrChangeForUI);
+	AttributeSet->GetAttributeChangeDelegate(FName("MaxMana"),Current).AddUObject(this, &UAwOverayWidgetController::MaxManaCurrChangeForUI);
 }
-
-void UAwOverayWidgetController::MaxHealthChangeForUI(float NewVal, float OldVal) const
-{
-	OnMaxHealthChangeForUI.Broadcast(NewVal, OldVal);
-}
-
-void UAwOverayWidgetController::ManaChangeForUI(float NewVal, float OldVal) const
-{
-	OnManaChangeForUI.Broadcast(NewVal, OldVal);
-}
-
-void UAwOverayWidgetController::MaxManaChangeForUI(float NewVal, float OldVal) const
-{
-	OnMaxManaChangeForUI.Broadcast(NewVal, OldVal);
-}
-
 
 

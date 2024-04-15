@@ -139,8 +139,6 @@ protected:
 	UFUNCTION(Exec)
 	void HealSelf(float v = 10000.f);
 
-
-	
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;

@@ -5,6 +5,7 @@
 
 #include "AwAction.h"
 #include "AWPlayerState.h"
+#include "AI/AWAICharacter.h"
 #include "UI/AwSkillWidget.h"
 
 // Sets default values for this component's properties
@@ -17,32 +18,27 @@ UAwActionComponent::UAwActionComponent()
 }
 
 
-void UAwActionComponent::ApplyInstanceEffects(UAwActionEffect* Effect,AActor* Insigator)
+void UAwActionComponent::ApplyInstanceEffects(UAwActionEffect* Effect,AActor* Insigator,UAWAttributeComp* AttributeComp)
 {
-	if (!OwningActor)
-		return;
-	if (AAwCharacter* owner = Cast<AAwCharacter>(OwningActor))
+	
+	if (Effect->GetEffectMap().Num() > 0)
 	{
-		// find the att comp
-		auto AttributeComp = owner->GetOwningAttribute();
-		if (Effect->GetEffectMap().Num() > 0)
+		for (auto TPAIR : Effect->GetEffectMap())
 		{
-			for (auto TPAIR : Effect->GetEffectMap())
-			{
-				auto& NAME = TPAIR.Key;
-				const auto VALUE = TPAIR.Value;
-				AttributeComp->SetAttribute(NAME, VALUE,Insigator);
-			}
+			FString NAME = TPAIR.Key;
+			const auto VALUE = TPAIR.Value;
+			// PRINT ON THE SCREEN
+			AttributeComp->SetAttribute(FName(*NAME), VALUE,Insigator);
 		}
-		if (Effect->GetEffectMapForAction().Num() > 0)
+	}
+	if (Effect->GetEffectMapForAction().Num() > 0)
+	{
+		for (auto TPAIR : Effect->GetEffectMapForAction())
 		{
-			for (auto TPAIR : Effect->GetEffectMapForAction())
-			{
-				auto& NAME = TPAIR.Key;
-				const auto VALUE = TPAIR.Value;
-				// TODO: Effect the action
+			auto& NAME = TPAIR.Key;
+			const auto VALUE = TPAIR.Value;
+			// TODO: Effect the action
 				
-			}
 		}
 	}
 }
@@ -55,11 +51,14 @@ void UAwActionComponent::BeginPlay()
 
 bool UAwActionComponent::SetOwningActor()
 {
+	ensure(GetOuter());
 	AAWPlayerState* OwningPlayerState = Cast<AAWPlayerState>(GetOuter());
 	if (OwningPlayerState)
 	{
-		OwningActor = OwningPlayerState->GetOwner();
-		return true;
+		OwningActor = OwningPlayerState->GetPawn();
+		if(OwningActor)
+			return true;
+		return false;
 	}
 
 	if (AActor* Actor = Cast<AActor>(GetOuter()))
@@ -71,10 +70,15 @@ bool UAwActionComponent::SetOwningActor()
 	return false;
 }
 
-FAwGameplayEffectContextHandle UAwActionComponent::MakeEffectContex(AActor* Causer)
+FAwGameplayEffectContextHandle UAwActionComponent::MakeEffectContex(AActor* Causer,UAwAction* Action)
 {
+	if(Causer == nullptr)
+	{
+		Causer = OwningActor;
+	}
 	FAwGameplayEffectContext* Context = new FAwGameplayEffectContext();
-	FAwGameplayEffectContextHandle ContextHandle = FAwGameplayEffectContextHandle(Context);
+	Context->SetAbility(Action);
+	FAwGameplayEffectContextHandle ContextHandle =  FAwGameplayEffectContextHandle(Context);
 	ContextHandle.AddInstigator(OwningActor, Causer);
 	// By default use the owner and avatar as the instigator and causer
 	return ContextHandle;
@@ -125,20 +129,21 @@ bool UAwActionComponent::RemoveAction(UAwAction* ActionToRemove)
 	return false;
 }
 
-bool UAwActionComponent::ApplyEffect(const FAwGameplayEffectContext& EffectContext)
+bool UAwActionComponent::ApplyEffect(const FAwGameplayEffectContext& EffectContext, UAWAttributeComp* AttributeComp)
 {
 	UAwAction* Skill = EffectContext.GetAbility();
 	// Skill stores the info of effect
 	if (!Skill)
 		return false;
+	
 	for (auto& Effect : Skill->GetActionEffect())
 	{
 		// Apply the effect
-		UAwActionEffect* Effect_INSTANCE = NewObject<UAwActionEffect>(this, Effect);
+		UAwActionEffect*  Effect_INSTANCE = Effect.GetDefaultObject();
 		if (Effect_INSTANCE->GetType() == DurationPolicy::Instant)
 		{
 			// Apply the effect instantly
-			ApplyInstanceEffects(Effect_INSTANCE,EffectContext.GetInstigator());
+			ApplyInstanceEffects(Effect_INSTANCE,EffectContext.GetInstigator(),AttributeComp);
 		}
 		else if (Effect_INSTANCE->GetType() == DurationPolicy::Duration)
 		{
@@ -148,8 +153,7 @@ bool UAwActionComponent::ApplyEffect(const FAwGameplayEffectContext& EffectConte
 		{
 			// TODO
 		}
-
-		delete Effect_INSTANCE;
+		
 	}
 	return true;
 }
@@ -160,11 +164,10 @@ void UAwActionComponent::StartActionByName(AActor* Instigator, FName ActionName)
 	{
 		if (Action && Action->GetActionName() == ActionName)
 		{
-			if (!Action->CheckActionAvailable(Instigator))
+			if (Action->CheckActionAvailable(Instigator))
 			{
-				continue;
+				Action->StartAction(Instigator);
 			}
-			Action->StartAction(Instigator);
 		}
 	}
 }
@@ -180,6 +183,18 @@ void UAwActionComponent::StopActionByName(AActor* Instigator, FName ActionName)
 	}
 }
 
+UAwAction* UAwActionComponent::GetActionByName(FName ActionName)
+{
+	for (UAwAction* Action : Actions)
+	{
+		if (Action && Action->GetActionName() == ActionName)
+		{
+			return Action;
+		}
+	}
+	return  nullptr;
+}
+
 
 // Called every frame
 void UAwActionComponent::TickComponent(float DeltaTime, ELevelTick TickType,
@@ -188,11 +203,11 @@ void UAwActionComponent::TickComponent(float DeltaTime, ELevelTick TickType,
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
 	// Debug Code
-	if (ActiveGameplayTags.Num() != 0)
-	{
-		FString DebugMsg = GetNameSafe(GetOwner()) + ": " + ActiveGameplayTags.ToStringSimple();
-		FString DebugMsg2 = GetNameSafe(GetOwner()) + ": " + BlockGamePlayTags.ToStringSimple();
-		GEngine->AddOnScreenDebugMessage(-1, 0.f, FColor::Black, DebugMsg);
-		GEngine->AddOnScreenDebugMessage(-1, 0.f, FColor::White, DebugMsg2);
-	}
+	// if (ActiveGameplayTags.Num() != 0)
+	// {
+	// 	FString DebugMsg = GetNameSafe(GetOwner()) + ": " + ActiveGameplayTags.ToStringSimple();
+	// 	FString DebugMsg2 = GetNameSafe(GetOwner()) + ": " + BlockGamePlayTags.ToStringSimple();
+	// 	GEngine->AddOnScreenDebugMessage(-1, 0.f, FColor::Black, DebugMsg);
+	// 	GEngine->AddOnScreenDebugMessage(-1, 0.f, FColor::White, DebugMsg2);
+	// }
 }

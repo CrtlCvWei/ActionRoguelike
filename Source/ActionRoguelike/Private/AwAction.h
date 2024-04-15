@@ -83,7 +83,7 @@ public:
 	FGameplayTag GetActionTag() const;
 
 	UFUNCTION()
-	bool CheckActionAvailable(AActor* Instigator) const;
+	virtual  bool CheckActionAvailable(AActor* Instigator) const;
 
 	FOnAwActionCoolDownStartSignture& GetCoolDownStartDelegate(){ return OnCoolDownStart; };
 	FOnAwActionCoolDownEndSignture& GetCoolDownEndDelegate(){ return OnCoolDownEnd;}

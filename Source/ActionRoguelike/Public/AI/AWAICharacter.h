@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
+#include "MyGAS/AwActionComponent.h"
 #include "AWAICharacter.generated.h"
 
 class UAwWorldUserWidget;
@@ -25,8 +26,11 @@ protected:
 	void Init_Paramters();
 	
 	UPROPERTY(VisibleAnywhere,BlueprintReadOnly,Category="Components")
-	UAWAttributeComp* AttributeComp;
+	 TObjectPtr<UAWAttributeComp> AttributeComp;
 
+	UPROPERTY(VisibleAnywhere,BlueprintReadOnly,Category="Components")
+	TObjectPtr<UAwActionComponent> ActionComp;
+	
 	UPROPERTY(VisibleAnywhere,BlueprintReadOnly,Category="Components")
 	UAWReward* RewardComp;
 
@@ -38,6 +42,7 @@ protected:
 
 	UPROPERTY()
 	UAwWorldUserWidget* AIHealthBar;
+
 	
 	UFUNCTION()
 	virtual void OnHealthChange(AActor* InstigatorActor, UAWAttributeComp* AttributeComponent, float NewHealth, float Change);
@@ -47,12 +52,12 @@ protected:
 	UFUNCTION()
 	void OnPawnSeen(APawn* SeenPawn);
 public:
-
-
 	
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
 	virtual void PostInitializeComponents() override;
 	
+	UFUNCTION()
+	UAWAttributeComp* GetAttributeComp() const { return AttributeComp.Get(); }
 };

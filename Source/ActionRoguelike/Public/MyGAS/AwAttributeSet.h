@@ -36,23 +36,16 @@ FAwAttributeData Get##PropertyName##Attribute() \
 	return FAwAttributeData::ERROR;\
 }
 
-#define AWGAMEPLAYATTRIBUTE_VALUE_GETTER(PropertyName) \
-FORCEINLINE float Get##PropertyName() const \
+#define AWGAMEPLAYATTRIBUTE_VALUEb_Curr_GETTER(PropertyName) \
+FORCEINLINE float Get##PropertyName##Current() const \
 { \
-return PropertyName.GetCurrentValue(); \
+return PropertyName.GetCurrentValue();  \
 }
 
 #define AWGAMEPLAYATTRIBUTE_VALUE_BASE_GETTER(ClassName, PropertyName) \
-FAwAttributeData Get##PropertyName##Base() \
+float Get##PropertyName##Base() \
 { \
-FProperty* Prop = FindFieldChecked<FProperty>(ClassName::StaticClass(), GET_MEMBER_NAME_CHECKED(ClassName, PropertyName)); \
-if (ensure(Prop)) \
-{ \
-FAwAttributeData Target;\
-Prop->GetValue_InContainer(this, &Target);\
-return Target.GetBaseValue();\
-}\
-return FAwAttributeData::ERROR;\
+return PropertyName.GetBaseValue();  \
 }
 
 #define AWGAMEPLAYATTRIBUTE_VALUE_INITTER(ClassName,PropertyName) \
@@ -61,13 +54,13 @@ FORCEINLINE void Init##PropertyName(float NewVal) \
 float CurrentOld = PropertyName.GetCurrentValue(); \
 float BaseOld = PropertyName.GetBaseValue(); \
 PropertyName.SetBaseValue(NewVal); \
-PropertyName.SetCurrentValue(NewVal); \
+PropertyName.SetCurrentValue(0); \
 AttributeDataChangeDelegate(GET_MEMBER_NAME_CHECKED(ClassName,PropertyName), NewVal, BaseOld,Base); \
-AttributeDataChangeDelegate(GET_MEMBER_NAME_CHECKED(ClassName,PropertyName), NewVal, CurrentOld,Current); \
+AttributeDataChangeDelegate(GET_MEMBER_NAME_CHECKED(ClassName,PropertyName), 0, CurrentOld,Current); \
 }
 
-#define AWGAMEPLAYATTRIBUTE_VALUE_SETTER(ClassName,PropertyName) \
-FORCEINLINE void Set##PropertyName(float NewVal) \
+#define AWGAMEPLAYATTRIBUTE_VALUE_Curr_SETTER(ClassName,PropertyName) \
+FORCEINLINE void Set##PropertyName##Current(float NewVal) \
 { \
 float CurrentOld = PropertyName.GetCurrentValue(); \
 PropertyName.SetCurrentValue(NewVal); \
@@ -75,7 +68,7 @@ AttributeDataChangeDelegate(GET_MEMBER_NAME_CHECKED(ClassName,PropertyName), New
 };
 
 #define AWGAMEPLAYATTRIBUTE_VALUE_BASE_SETTER(ClassName,PropertyName) \
-FORCEINLINE void Effect##PropertyName##Base(float NewVal) \
+FORCEINLINE void Set##PropertyName##Base(float NewVal) \
 { \
 float BaseOld = PropertyName.GetBaseValue(); \
 PropertyName.SetBaseValue(NewVal); \
@@ -85,9 +78,9 @@ AttributeDataChangeDelegate(GET_MEMBER_NAME_CHECKED(ClassName,PropertyName), New
 #define AWATTRIBUTE_ACCESSORS(ClassName, PropertyName) \
 	AWGAMEPLAYATTRIBUTE_PROPERTY_GETTER(ClassName, PropertyName) \
 	AWGAMEPLAYATTRIBUTE_VALUE_INITTER(ClassName,PropertyName)\
-	AWGAMEPLAYATTRIBUTE_VALUE_GETTER(PropertyName) \
-	AWGAMEPLAYATTRIBUTE_VALUE_BASE_GETTER(ClassName, PropertyName) \
-	AWGAMEPLAYATTRIBUTE_VALUE_SETTER(ClassName,PropertyName) \
+	AWGAMEPLAYATTRIBUTE_VALUEb_Curr_GETTER(PropertyName) \
+	AWGAMEPLAYATTRIBUTE_VALUE_BASE_GETTER(ClassName,PropertyName) \
+	AWGAMEPLAYATTRIBUTE_VALUE_Curr_SETTER(ClassName,PropertyName) \
 	AWGAMEPLAYATTRIBUTE_VALUE_BASE_SETTER(ClassName,PropertyName)
 /*
  *
@@ -194,8 +187,7 @@ struct FReplicaAttributesEntry_FName_FAwAttributeData
 	FAwAttributeData Value;
 
 	FReplicaAttributesEntry_FName_FAwAttributeData(): Key(NAME_None), Value(FAwAttributeData::ERROR)
-	{
-	}
+	{}
 
 	FReplicaAttributesEntry_FName_FAwAttributeData(const TPair<FName, FAwAttributeData>& A):
 		Key(std::move(A.Key)), Value(std::move(A.Value))
@@ -215,16 +207,16 @@ protected:
 	UPROPERTY(BlueprintReadOnly)
 	AActor* OwningActor;
 
-	UPROPERTY(Replicated,EditAnywhere, BlueprintReadOnly, Category = "Attributes")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Attributes")
 	FAwAttributeData Health;
 
-	UPROPERTY(Replicated,EditAnywhere, BlueprintReadOnly, Category = "Attributes")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Attributes")
 	FAwAttributeData MaxHealth;
 
-	UPROPERTY(Replicated,EditAnywhere, BlueprintReadOnly, Category = "Attributes")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Attributes")
 	FAwAttributeData Mana;
 
-	UPROPERTY(Replicated,EditAnywhere, BlueprintReadOnly, Category = "Attributes")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Attributes")
 	FAwAttributeData MaxMana;
 	
 	
@@ -251,12 +243,12 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attributes")
 	TMap<FName, FAwAttributeData> OtherAttributes;
 
-	UPROPERTY(ReplicatedUsing = OnRep_OtherAttributes, VisibleDefaultsOnly, Category = "Attributes")
+	UPROPERTY(VisibleDefaultsOnly, Category = "Attributes")
 	TArray<FReplicaAttributesEntry_FName_FAwAttributeData> ReplicaAttributesArray;
-
+	
 	UFUNCTION()
 	void OnRep_Health(const FAwAttributeData& OldHealth);
-
+	
 	UFUNCTION()
 	void OnRep_Mana(const FAwAttributeData& OldMana);
 

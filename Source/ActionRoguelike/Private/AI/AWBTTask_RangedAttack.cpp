@@ -4,19 +4,21 @@
 #include "AI/AWBTTask_RangedAttack.h"
 #include "..\Public\MyGAS/AWAttributeComp.h"
 #include "AIController.h"
+#include "AI/AwAction_AIRangedAttack.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "GameFramework/Character.h"
+#include "MyGAS/AwActionComponent.h"
 
 EBTNodeResult::Type UAWBTTask_RangedAttack::ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
 {
 	Super::ExecuteTask(OwnerComp, NodeMemory);
+	
 	AAIController* MyController = OwnerComp.GetAIOwner();
 	if (ensure(MyController))
 	{
 		ACharacter* MyPawn = Cast<ACharacter>(MyController->GetPawn());
 		if (MyPawn)
 		{
-			FVector SpawnLocation = MyPawn->GetMesh()->GetSocketLocation("Muzzle_Front");
 			ACharacter* Target = Cast<ACharacter>(OwnerComp.GetBlackboardComponent()->GetValueAsObject("TargetActor"));
 			if (Target)
 			{
@@ -28,19 +30,18 @@ EBTNodeResult::Type UAWBTTask_RangedAttack::ExecuteTask(UBehaviorTreeComponent& 
 						return EBTNodeResult::Failed;
 					}
 				}
-				FVector TargetLocation = Target->GetActorLocation();
-				FRotator ProjectileRotation = (TargetLocation - SpawnLocation).Rotation();
-				FTransform LocaTM = FTransform((FRotator)ProjectileRotation,
-				                               (FVector)SpawnLocation);
-				FActorSpawnParameters SpawnParams;
-				/** Actor will spawn in desired location, regardless of collisions. */
-				SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-				SpawnParams.Instigator = MyPawn;
-				// Spawn the projectile (Magic balls or any other things...)
-				
-				AActor* Projectile = GetWorld()->SpawnActor<AActor>(ProjectileClass, LocaTM, SpawnParams);
-
-				return Projectile ? EBTNodeResult::Succeeded : EBTNodeResult::Failed;
+				auto ActionComp = Cast<UAwActionComponent>(MyPawn->GetComponentByClass(UAwActionComponent::StaticClass()));
+				if (ActionComp)
+				{
+					if(ActionComp->GetActionByName("Attack"))
+					{
+						auto AttackAction = Cast<UAwAction_AIRangedAttack>(ActionComp->GetActionByName("Attack")) ;
+						AttackAction->SetTarget(Target);
+						ActionComp->StartActionByName(MyPawn, "Attack");
+						return EBTNodeResult::Succeeded;
+					}
+		
+				return EBTNodeResult::Failed;
 			}
 		}
 	}

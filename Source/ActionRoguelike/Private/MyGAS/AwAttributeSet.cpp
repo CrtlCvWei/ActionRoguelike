@@ -3,10 +3,8 @@
 
 #include "MyGAS/AwAttributeSet.h"
 // #include "AbilitySystemComponent.h"
-#include "AttributeSet.h"
 #include "AWPlayerState.h"
 #include "Net/UnrealNetwork.h"
-#include "Net/NetPushModelHelpers.h"
 
 /**/
 const FAwAttributeData FAwAttributeData::ERROR = FAwAttributeData(std::numeric_limits<float>::lowest());
@@ -79,8 +77,8 @@ void UAwAttributeSet::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutL
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
-	DOREPLIFETIME_CONDITION_NOTIFY(UAwAttributeSet, Health, COND_None, REPNOTIFY_Always);
-	DOREPLIFETIME_CONDITION_NOTIFY(UAwAttributeSet, Mana, COND_None, REPNOTIFY_Always);
+	// DOREPLIFETIME_CONDITION_NOTIFY(UAwAttributeSet, Health, COND_None, REPNOTIFY_Always);
+	// DOREPLIFETIME_CONDITION_NOTIFY(UAwAttributeSet, Mana, COND_None, REPNOTIFY_Always);
 	DOREPLIFETIME_CONDITION_NOTIFY(UAwAttributeSet, ReplicaAttributesArray, COND_None, REPNOTIFY_Always);
 }
 
@@ -91,10 +89,10 @@ void UAwAttributeSet::OnRep_Health(const FAwAttributeData& OldHealth)
 void UAwAttributeSet::OnRep_Mana(const FAwAttributeData& OldMana)
 {
 }
-//
+
 void UAwAttributeSet::OnRep_OtherAttributes()
 {
-	if(!GetOwningActor()->HasAuthority())
+	if(!OwningActor || !OwningActor->HasAuthority())
 	{
 		// OnRep_ReplicaAttributeMap();
 		return;

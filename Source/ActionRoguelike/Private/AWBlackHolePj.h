@@ -35,7 +35,7 @@ private:
 
 protected:
 	UPROPERTY(BlueprintReadWrite)
-	FTimerHandle AttractionStartTimerHandle;
+	FTimerHandle ExplosiveTimerHandle;
 	UPROPERTY(BlueprintReadOnly)
 	FTimerHandle AttractionTimerHandle;
 
@@ -44,12 +44,14 @@ protected:
 
 	void Init_Paramters();
 
+	
 	virtual  void PostInitializeComponents() override;
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
 
 public:
+	virtual void AwGamePlayEffectImpact(AActor* Effector) override;
 
 	// Sets default values for this actor's properties
 	AAWBlackHolePj();

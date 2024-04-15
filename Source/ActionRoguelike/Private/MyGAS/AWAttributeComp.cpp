@@ -2,7 +2,7 @@
 
 
 #include "..\Public\MyGAS/AWAttributeComp.h"
-
+#include "AWPlayerState.h"
 #include "AWGameModeBase.h"
 #include "AWReward.h"
 #include "GameFramework/PlayerState.h"
@@ -47,10 +47,23 @@ void UAWAttributeComp::CreateAllAttributeChangeMap()
 
 bool UAWAttributeComp::SetHealth(const float v,AActor* Sourcer)
 {
-	if (AttributeSet->GetHealth() >= 0)
+	if (AttributeSet->GetHealthBase() + AttributeSet->GetHealthCurrent() >= 0)	
 	{
-		float NewHP = AttributeSet->GetHealth() + v;
-		NewHP = NewHP > AttributeSet->GetMaxHealth() ? AttributeSet->GetMaxHealth() : NewHP;
+		// Base Health Base
+		float Actural = v;
+		if (AttributeSet->GetHealthCurrent() + v >= 0 && v < 0 )
+		{
+			// AttributeSet->SetHealthCurrent(AttributeSet->GetHealthCurrent() + v);
+			
+			Actural = 0;
+		}
+		else if(AttributeSet->GetHealthCurrent() + v < 0 && v < 0)
+		{
+			// AttributeSet->SetHealthCurrent(0);
+			Actural = v + AttributeSet->GetHealthCurrent();
+		}
+		float NewHP = AttributeSet->GetHealthBase() + Actural;
+		NewHP = NewHP > AttributeSet->GetMaxHealthBase() + AttributeSet->GetMaxHealthCurrent() ? AttributeSet->GetMaxHealthBase() + AttributeSet->GetMaxHealthCurrent() : NewHP;
 		NewHP = NewHP < 0 ? 0 : NewHP;
 		if (NewHP == 0)
 		{
@@ -71,9 +84,9 @@ bool UAWAttributeComp::SetHealth(const float v,AActor* Sourcer)
 				}
 			}
 		}
-		AttributeSet->SetHealth(NewHP);
+		AttributeSet->SetHealthBase(NewHP);
 		// trigger the event!
-		AttributeChangeBoardCast("Health", Sourcer, AttributeSet->GetHealth(), v);
+		AttributeChangeBoardCast("Health", Sourcer, AttributeSet->GetHealthBase() + AttributeSet->GetHealthCurrent(), v);
 		return true;
 	}
 	return false;
@@ -84,11 +97,10 @@ bool UAWAttributeComp::SetAttribute(FName AttributeName, const float v,AActor* S
 	//TODO: MAKE SET ATTRIBUTE FUNCTION WORK
 	if(AttributeName.ToString().Contains("Max"))
 	{
-		//error not in this funtion
+		//	TODO : Max Attribute Case
 		return false;
 	}
-
-	// Health Case
+	
 	if (AttributeName == "Health" || AttributeName == "health" )
 	{
 		return SetHealth(v,Sourcer);
@@ -122,7 +134,10 @@ bool UAWAttributeComp::SetAttribute(FName AttributeName, const float v,AActor* S
 
 bool UAWAttributeComp::isAlive() const
 {
-	return (AttributeSet->GetHealth() > 0.f && AttributeSet->GetMaxHealth() > 0.f);
+	if(GetMaxHealth() > 0.f)
+		if(GetHealth() > 0.f )
+			return true;
+	return false;
 }
 
 inline  float UAWAttributeComp::GetAttributeBase(FName AttributeName) const
@@ -136,6 +151,24 @@ inline  float UAWAttributeComp::GetAttributeBase(FName AttributeName) const
 	return Attr.GetBaseValue();
 }
 
+bool UAWAttributeComp::SetOwningActor()
+{
+	AAWPlayerState* OwningPlayerState = Cast<AAWPlayerState>(GetOuter());
+	if (OwningPlayerState)
+	{
+		OwningActor = OwningPlayerState->GetPawn();
+		return true;
+	}
+
+	if (AActor* Actor = Cast<AActor>(GetOuter()))
+	{
+		OwningActor = Actor;
+		return true;
+	}
+
+	return false;
+}
+
 inline  float UAWAttributeComp::GetAttributeCurrent(FName AttributeName) const
 {
 	auto Attr = GetAttributeData(AttributeName);
@@ -147,10 +180,16 @@ inline  float UAWAttributeComp::GetAttributeCurrent(FName AttributeName) const
 	return Attr.GetCurrentValue();
 }
 
+float UAWAttributeComp::GetActualAttribute(FName AttributeName) const
+{
+	return GetAttributeBase(AttributeName) + GetAttributeCurrent(AttributeName);
+}
+
 void UAWAttributeComp::AttributeChangeBoardCast(const FName Name, AActor* Instigator, float NewValue, float Change)
 {
 	if (ensureAlways(AllAttributeChangeMap.Contains(Name))) // check if the map contains the key
 	{
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, Name.ToString() + " : " + FString::SanitizeFloat(NewValue));
 		AllAttributeChangeMap[Name].Broadcast(Instigator, this, NewValue, Change);
 	}
 }

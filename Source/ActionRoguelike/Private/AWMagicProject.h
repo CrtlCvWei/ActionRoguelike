@@ -26,6 +26,7 @@ public:
 protected:
 	void Init_Paramters();
 	
+	virtual void AwGamePlayEffectImpact(AActor* Effector) override;
 
 	virtual  void OnComponentHit_Implementation(UPrimitiveComponent* HitComp, AActor* OtherActor,
 													UPrimitiveComponent* OtherComp, FVector NormalImpluse,

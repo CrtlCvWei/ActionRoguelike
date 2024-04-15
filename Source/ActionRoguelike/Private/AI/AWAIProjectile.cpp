@@ -6,7 +6,7 @@
 #include "AwCharacter.h"
 #include "..\Public\MyGAS/AWAttributeComp.h"
 #include "Components/SphereComponent.h"
-#include "Niagara/Public/NiagaraComponent.h"
+#include "AWPlayerState.h"
 #include "Components/AudioComponent.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 
@@ -21,6 +21,28 @@ void AAWAIProjectile::Init_Paramters()
 {
 	MoveComp->InitialSpeed = this->InitialSpeed;
 	
+}
+
+void AAWAIProjectile::AwGamePlayEffectImpact(AActor* Effector)
+{
+	if (!EffectContext || !EffectContext.Get())
+		return;
+	UAwActionComponent* ActionComponent = nullptr;;
+	UAWAttributeComp* Attribute = nullptr;
+	if(AAwCharacter* Player = Cast<AAwCharacter>(Effector))
+	{
+		ActionComponent = Player->GetOwningAction();
+		Attribute = Player->GetOwningAttribute();
+	}
+	else
+	{
+		ActionComponent = Effector->FindComponentByClass<UAwActionComponent>();
+		Attribute = Effector->FindComponentByClass<UAWAttributeComp>();
+	}
+	if (ensureAlways(ActionComponent && Attribute))
+	{
+		ActionComponent->ApplyEffect(*(EffectContext->Get()),Attribute);
+	}
 }
 
 
@@ -39,6 +61,7 @@ void AAWAIProjectile::OnBeginOverlap_Implementation(UPrimitiveComponent* Overlap
 			{
 				// Player Attribute is in PlayerState
 				Attribute = Player->GetOwningAttribute();
+				AwGamePlayEffectImpact(Player);
 			}
 		}
 		if (Attribute)
@@ -47,8 +70,10 @@ void AAWAIProjectile::OnBeginOverlap_Implementation(UPrimitiveComponent* Overlap
 			float God_test = CVarTurnAIProjectileDamage.GetValueOnGameThread();
 			autral_damage *= God_test;
 			
-			Attribute->SetHealth( autral_damage, this->GetInstigator());
-			Attribute->SetAttribute("Health", autral_damage, this->GetInstigator());
+			// Attribute->SetHealth( autral_damage, this->GetInstigator());
+			// Attribute->SetAttribute("Health", autral_damage, this->GetInstigator());
+
+			
 			bool bDebug = CVarDebugVisulizeAIProjectileDamage.GetValueOnGameThread();
 			if(bDebug)
 			{

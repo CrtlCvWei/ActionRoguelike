@@ -35,5 +35,12 @@ void UAWaiBTService_CheckAttackRange::TickNode(UBehaviorTreeComponent& OwnerComp
 				BlackboardComp->SetValueAsBool(Seen.SelectedKeyName, false);
 			}
 		}
+		else
+		{
+			BlackboardComp->SetValueAsBool(WithInAttackRange.SelectedKeyName, false);
+			BlackboardComp->SetValueAsBool(OutOfRange.SelectedKeyName, true);
+			BlackboardComp->SetValueAsBool(LineOfSight.SelectedKeyName, false);
+			
+		}
 	}
 }

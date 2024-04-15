@@ -60,7 +60,8 @@ protected:
 	
 public:
 	UAwAction_BlackHoleAbilbity();
-	
+
+	virtual bool CheckActionAvailable(AActor* Instigator) const override;
 	virtual void  StartAction_Implementation(AActor* Instigator) override;
 	virtual void StopAction_Implementation(AActor* Instigator) override;
 
