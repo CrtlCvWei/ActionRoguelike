@@ -40,7 +40,7 @@ EBTNodeResult::Type UAWBTTask_RangedAttack::ExecuteTask(UBehaviorTreeComponent& 
 						ActionComp->StartActionByName(MyPawn, "Attack");
 						return EBTNodeResult::Succeeded;
 					}
-		
+				}
 				return EBTNodeResult::Failed;
 			}
 		}
