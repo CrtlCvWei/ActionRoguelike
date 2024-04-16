@@ -1,6 +1,6 @@
 {
 	"FileVersion": 3,
-	"EngineAssociation": "{60865CCE-47AC-79F1-8E2B-45A11D1F6B41}",
+	"EngineAssociation": "{C3CF46D0-4FBB-C665-3C48-E7971F73717C}",
 	"Category": "",
 	"Description": "",
 	"Modules": [
@@ -19,10 +19,11 @@
 	"Plugins": [
 		{
 			"Name": "ModelingToolsEditorMode",
-			"Enabled": true,
-			"TargetAllowList": [
-				"Editor"
-			]
+			"Enabled": true
+		},
+		{
+			"Name": "GameplayAbilities",
+			"Enabled": true
 		}
 	]
 }
