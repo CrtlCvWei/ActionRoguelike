@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "MyGAS/AwActionComponent.h"
+#include "MyGAS/AWAttributeComp.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "AwBlueprintFunctionLibrary.generated.h"
 
@@ -24,5 +25,7 @@ public:
 
 	UFUNCTION(BlueprintCallable,Category = "Gameplay")
 	static  UAwActionComponent* GetAwActionComponent(AActor* TargetActor,bool FindOther = true);
-	
+
+	UFUNCTION(Blueprintable,Category = "Gameplay")
+	static UAWAttributeComp* GetAwAttributeComponent(AActor* TargetActor,bool FindOther = true);
 };

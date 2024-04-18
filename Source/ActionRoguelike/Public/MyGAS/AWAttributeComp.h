@@ -14,6 +14,9 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_FourParams(FOnAttributeChangeSignture, AActor
                                               AttributeComp, float, NewHealth, float, Change);
 
 
+
+
+
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
 class ACTIONROGUELIKE_API UAWAttributeComp : public UActorComponent
 {
@@ -47,7 +50,7 @@ public:
 	bool SetHealth(const float v, AActor* Sourcer);
 
 	UFUNCTION(BlueprintCallable)
-	bool SetAttribute( FName AttributeName, const float v,AActor* Sourcer);
+	bool SetAttributeBase( FName AttributeName, const float v,AActor* Sourcer);
 	
 	UFUNCTION(BlueprintCallable)
 	bool isAlive() const;

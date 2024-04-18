@@ -2,8 +2,7 @@
 
 
 #include "AwAction_BlackHoleAbilbity.h"
-#include "..\Public\MyGAS/AWAttributeComp.h"
-#include "MyGAS/AwActionComponent.h"
+#include "Blueprint/AwBlueprintFunctionLibrary.h"
 #include "AWBlackHolePj.h"
 #include "AWPlayerState.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -54,6 +53,12 @@ void UAwAction_BlackHoleAbilbity::StartAction_Implementation(AActor* Instigator)
 		if (ensure(GetWorld()))
 		{
 			GetWorld()->GetTimerManager().SetTimer(ProjectileSpawnHandle, Delegate, 0.25f, false);
+		}
+		// Cost Mana
+		auto Attr = UAwBlueprintFunctionLibrary::GetAwAttributeComponent(Instigator);
+		if (Attr)
+		{
+			Attr->SetAttributeBase("Mana", -ManaCost.GetCurrentValue(), Instigator);
 		}
 	}
 }

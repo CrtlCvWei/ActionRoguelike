@@ -19,7 +19,7 @@ class UAwActionComponent : public UActorComponent
 	UPROPERTY()
 	AActor* OwningActor;
 
-	void ApplyInstanceEffects(UAwActionEffect* Effect,AActor* Insigator,UAWAttributeComp* AttributeComp);
+
 	
 protected:
 	UPROPERTY()
@@ -70,6 +70,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category="Actions")
 	AActor* GetOwningActor() const{return OwningActor;}
 
+	UFUNCTION(Blueprintable)
+	inline void ApplyInstanceEffects(UAwActionEffect* Effect,AActor* Insigator,UAWAttributeComp* AttributeComp);
+	
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType,
 	                           FActorComponentTickFunction* ThisTickFunction) override;
 };

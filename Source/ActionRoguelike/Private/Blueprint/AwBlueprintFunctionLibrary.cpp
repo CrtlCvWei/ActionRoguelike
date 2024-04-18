@@ -64,3 +64,28 @@ UAwActionComponent* UAwBlueprintFunctionLibrary::GetAwActionComponent(AActor* Ac
 	}
 	return nullptr;
 }
+
+UAWAttributeComp* UAwBlueprintFunctionLibrary::GetAwAttributeComponent(AActor* TargetActor, bool FindOther)
+{
+	if (TargetActor == nullptr)
+	{
+		return nullptr;
+	}
+
+	//May in the PlaerState
+	const AAwCharacter* AC = Cast<AAwCharacter>(TargetActor);
+	if(AC)
+	{
+		const AAWPlayerState* AwPS = Cast<AAWPlayerState>(AC->GetPlayerState());
+		if (AwPS)
+		{
+			return Cast<UAWAttributeComp>(AwPS->GetPlayerAttribute());
+		}
+	}
+	if(FindOther)
+	{
+		// Fall back to a component search to better support BP-only actors
+		return TargetActor->FindComponentByClass<UAWAttributeComp>();
+	}
+	return nullptr;
+}

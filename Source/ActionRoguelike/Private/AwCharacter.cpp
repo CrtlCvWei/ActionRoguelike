@@ -22,7 +22,7 @@ AAwCharacter::AAwCharacter()
 {
 	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
-	Init_Paramters(); 
+	Init_Paramters();
 }
 
 void AAwCharacter::PostInitializeComponents()
@@ -34,14 +34,15 @@ UAWAttributeComp* AAwCharacter::GetOwningAttribute() const
 {
 	APlayerController* PC = Cast<APlayerController>(GetController());
 	// if(!ensure(PC))
-	if(!PC)
+	if (!PC)
 		return nullptr;
 	AAWPlayerState* PS = PC->GetPlayerState<AAWPlayerState>();
-	if(!(PS))
-		return  nullptr;
-	if(PS->GetPlayerAttribute()->GetOwningActor() != this)
+	if (!(PS))
+		return nullptr;
+	if (PS->GetPlayerAttribute()->GetOwningActor() != this)
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Red, "Player Attribute is not found And Try to set Owning Actor");
+		GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Red,
+		                                 "Player Attribute is not found And Try to set Owning Actor");
 		PS->GetPlayerAttribute()->SetOwningActor();
 		PS->GetPlayerAttribute()->GetAttributeSet()->SetOwningActor();
 	}
@@ -51,17 +52,18 @@ UAWAttributeComp* AAwCharacter::GetOwningAttribute() const
 UAwActionComponent* AAwCharacter::GetOwningAction() const
 {
 	APlayerController* PC = Cast<APlayerController>(GetController());
-	if(!ensure(PC))
+	if (!ensure(PC))
 		return nullptr;
 	AAWPlayerState* PS = PC->GetPlayerState<AAWPlayerState>();
-	if(!ensure(PS))
-		return  nullptr;
-	if(PS->GetPlayerAction()->GetOwningActor() != this)
+	if (!ensure(PS))
+		return nullptr;
+	if (PS->GetPlayerAction()->GetOwningActor() != this)
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Red, "Player Action is not found And Try to set Owning Actor");
+		GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Red,
+		                                 "Player Action is not found And Try to set Owning Actor");
 		PS->GetPlayerAction()->SetOwningActor();
 	}
-	return  PS->GetPlayerAction();;
+	return PS->GetPlayerAction();;
 }
 
 void AAwCharacter::Init_Paramters()
@@ -89,7 +91,7 @@ void AAwCharacter::Init_Paramters()
 	InteractionComp = CreateDefaultSubobject<UAWInteractionComponent>("InteractionComp");
 
 	//GAS
-	
+
 	GetCharacterMovement()->MaxWalkSpeed = this->NormalMoveSpeed;
 	GetCharacterMovement()->GravityScale = this->GravityScale;
 	JumpMaxHoldTime = 1.0f;
@@ -111,26 +113,26 @@ void AAwCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 	//init
-	UAWAttributeComp* AttributeComp =GetOwningAttribute();
+	UAWAttributeComp* AttributeComp = GetOwningAttribute();
 	if (ensure(AttributeComp))
 	{
-		AttributeComp->AttributeChangeBind("Health", this, &AAwCharacter::OnHealthChange,"&AAwCharacter::OnHealthChange");
+		AttributeComp->AttributeChangeBind("Health", this, &AAwCharacter::OnHealthChange,
+		                                   "&AAwCharacter::OnHealthChange");
 	}
-	
-	if(APlayerController* PC = Cast<APlayerController>(GetController()))
+
+	if (APlayerController* PC = Cast<APlayerController>(GetController()))
 	{
-		if(AAwHUD* HUD = Cast<AAwHUD>(PC->GetHUD()))
+		if (AAwHUD* HUD = Cast<AAwHUD>(PC->GetHUD()))
 		{
-			AAWPlayerState* PS =  PC->GetPlayerState<AAWPlayerState>();
-			if(!ensure(PS)) return;
-			UAWAttributeComp* AC =  PS->GetPlayerAttribute();
-			if(ensure(AC))
+			AAWPlayerState* PS = PC->GetPlayerState<AAWPlayerState>();
+			if (!ensure(PS)) return;
+			UAWAttributeComp* AC = PS->GetPlayerAttribute();
+			if (ensure(AC))
 			{
-				HUD->InitOverlayWidget(PC,PS,AC,GetOwningAction());
+				HUD->InitOverlayWidget(PC, PS, AC, GetOwningAction());
 			}
 		}
 	}
-
 }
 
 // Called every frame
@@ -141,10 +143,26 @@ void AAwCharacter::Tick(float DeltaTime)
 	// DrawDebugLine(GetWorld(), GetMesh()->GetSocketLocation("Head"),
 	//               GetMesh()->GetSocketLocation("Head") + GetActorForwardVector() * 100, FColor::Red, false, 0.1f, 0,
 	//               1.f);
-
-
-	// if (!bWasJumping && !GetCharacterMovement()->IsFalling())
-	// 	DetectWall();
+	
+	if (!bIsClimbing && GetCharacterMovement()->IsFalling())
+	{
+		if (DetectWall() )
+		{
+			static FCollisionQueryParams CollisionParams;
+			static FHitResult HitResult;
+			static FVector Start;
+			static FVector End;
+			CollisionParams.AddIgnoredActor(this);
+			Start = GetMesh()->GetSocketLocation("Hips");
+			End = Start + GetActorForwardVector() * 50;
+			if (GetWorld()->LineTraceSingleByObjectType(HitResult, Start, End,
+			                                            ECC_WorldStatic, CollisionParams))
+			{
+				
+				SwitchToClimbingMode();
+			}
+		}
+	}
 }
 
 void AAwCharacter::BeginSprint()
@@ -237,25 +255,25 @@ bool AAwCharacter::DetectWall()
 		                                           CollisionBox, CollisionParams);
 		if (!bHit)
 			break;
-		
+
 		Hit_normal = HitResult.ImpactNormal;
 		Hit_location = HitResult.ImpactPoint;
 
 		float Dis = FMath::Abs((Hit_location - Hit_location_pre).Dot(GetActorForwardVector()));
 		//
-		
+
 
 		if (Dis > Dis_thred ||
 			Hit_normal.Z < -0.5 || Hit_normal.Z > 0.86)
 			return false;
 		//
 		DrawDebugBox(GetWorld(), HitResult.ImpactPoint, BoxExtend, FQuat::Identity, FColor::Red, false, 2.f);
-		
+
 		Hit_location_pre = Hit_location;
 		StartLocation += ZOffest;
 		EndLocation += ZOffest;
 	}
-	
+
 	if (Hit_location.Z > BaseEyeHeight + 50.)
 	{
 		GEngine->AddOnScreenDebugMessage(-1, 0.f, FColor::White, Hit_normal.ToString());
@@ -354,6 +372,7 @@ void AAwCharacter::ClimbingTick()
 
 void AAwCharacter::SwitchToClimbingMode()
 {
+	GetMovementComponent()->Velocity = FVector::ZeroVector;
 	GetCharacterMovement()->bOrientRotationToMovement = false;
 	GetCharacterMovement()->SetMovementMode(MOVE_Flying);
 	bIsClimbing = true;
@@ -367,6 +386,7 @@ void AAwCharacter::RidOffClimbingMode()
 	{
 		GetCharacterMovement()->bOrientRotationToMovement = true;
 		GetCharacterMovement()->SetMovementMode(MOVE_Walking);
+		SetActorLocation(GetActorLocation() + GetActorForwardVector() * -100);
 		bIsClimbing = false;
 		SetActorRotation(FRotator(0, GetActorRotation().Yaw, 0));
 		GetMesh()->SetRelativeLocation(FVector(0, 0, -95));
@@ -483,7 +503,7 @@ bool AAwCharacter::DetectAndClimbUp()
 void AAwCharacter::OnHealthChange(AActor* InstigatorActor, UAWAttributeComp* AttributeComponent, float NewHealth,
                                   float Change)
 {
-	if (UAWAttributeComp* PlayerAttribute =  GetOwningAttribute())
+	if (UAWAttributeComp* PlayerAttribute = GetOwningAttribute())
 	{
 		if (!PlayerAttribute->isAlive())
 		{
@@ -504,7 +524,7 @@ void AAwCharacter::OnHealthChange(AActor* InstigatorActor, UAWAttributeComp* Att
 
 void AAwCharacter::HealSelf(float v)
 {
-	if (UAWAttributeComp* PlayerAttribute =  GetOwningAttribute())
+	if (UAWAttributeComp* PlayerAttribute = GetOwningAttribute())
 	{
 		PlayerAttribute->SetHealth(v, this);
 	}

@@ -7,6 +7,7 @@
 #include "AWReward.h"
 #include "GameFramework/PlayerState.h"
 
+#define print(text) if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 1.5, FColor::White,text)
 
 inline  FAwAttributeData UAWAttributeComp::GetAttributeData(const FName AttributeName) const
 {
@@ -92,7 +93,7 @@ bool UAWAttributeComp::SetHealth(const float v,AActor* Sourcer)
 	return false;
 }
 
-bool UAWAttributeComp::SetAttribute(FName AttributeName, const float v,AActor* Sourcer)
+bool UAWAttributeComp::SetAttributeBase(FName AttributeName, const float v,AActor* Sourcer)
 {
 	//TODO: MAKE SET ATTRIBUTE FUNCTION WORK
 	if(AttributeName.ToString().Contains("Max"))
@@ -120,12 +121,15 @@ bool UAWAttributeComp::SetAttribute(FName AttributeName, const float v,AActor* S
 	else
 		return false;
 
-	float NewValue = Data->GetCurrentValue() + v;
-	const float MaxValue = GetAttributeCurrent(FName("Max"+AttributeName.ToString()));
+	float NewValue = Data->GetBaseValue() + v;
+	const float MaxValue = GetAttributeBase(FName("Max"+AttributeName.ToString()));
 	NewValue = NewValue > MaxValue ? MaxValue : NewValue;
-	Data->SetCurrentValue(NewValue);
+	NewValue = NewValue < 0 ? 0 : NewValue;
 	
-	check(NewValue == Data->GetCurrentValue());
+	Data->SetBaseValue(NewValue);
+	AttributeDataChangeBroadcast(AttributeSet, AttributeName,  Data->GetBaseValue(),NewValue - v,AttributeChangedType::Base);
+	
+	check(NewValue == Data->GetBaseValue());
 	
 	// trigger the event!
 	AttributeChangeBoardCast(AttributeName, Sourcer, NewValue, v);
@@ -189,7 +193,6 @@ void UAWAttributeComp::AttributeChangeBoardCast(const FName Name, AActor* Instig
 {
 	if (ensureAlways(AllAttributeChangeMap.Contains(Name))) // check if the map contains the key
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, Name.ToString() + " : " + FString::SanitizeFloat(NewValue));
 		AllAttributeChangeMap[Name].Broadcast(Instigator, this, NewValue, Change);
 	}
 }

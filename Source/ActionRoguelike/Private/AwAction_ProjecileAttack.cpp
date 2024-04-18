@@ -2,7 +2,7 @@
 
 
 #include "AwAction_ProjecileAttack.h"
-
+#include "Blueprint/AwBlueprintFunctionLibrary.h"
 #include "AwCharacter.h"
 #include "AWProjectileBase.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -17,6 +17,8 @@ void UAwAction_ProjecileAttack::StartAction_Implementation(AActor* Instigator)
 	if (this->ProjectileClass && AttackAni)
 	{
 		bIsRunning = true;
+		// Cost Mana
+
 		// Attac Animation
 		AAwCharacter* Player = Cast<AAwCharacter>(Instigator);
 		if (Player->GetVelocity() == FVector::ZeroVector)
@@ -58,6 +60,13 @@ void UAwAction_ProjecileAttack::StartAction_Implementation(AActor* Instigator)
 				StartActionTimeEnasped(Instigator);
 			}
 		}
+	}
+
+	//cost
+	auto Attr = UAwBlueprintFunctionLibrary::GetAwAttributeComponent(Instigator);
+	if (Attr)
+	{
+		Attr->SetAttributeBase("Mana", -ManaCost.GetCurrentValue(), Instigator);
 	}
 }
 

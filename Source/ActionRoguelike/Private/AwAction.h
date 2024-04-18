@@ -7,7 +7,8 @@
 #include "MyGAS/AwAttributeSet.h"
 #include "AwAction.generated.h"
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnAwActionCoolDownStartSignture, UAwAction*,Action,float,CoolDownTime);
+class UAWAttributeComp;
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnAwActionCoolDownStartSignture, UAwAction*, Action, float, CoolDownTime);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnAwActionCoolDownEndSignture, UAwAction*,Action);
 struct FAwAttributeData;
 /**
@@ -18,7 +19,6 @@ class UAwAction : public UObject
 {
 	GENERATED_BODY()
 	
-	
 	FOnAwActionCoolDownStartSignture OnCoolDownStart;
 
 	FOnAwActionCoolDownEndSignture OnCoolDownEnd;
@@ -27,8 +27,11 @@ protected:
 	UPROPERTY(EditAnywhere, Category="Idnetify")
 	FName ActionName;
 
-	bool bIsRunning = false;
+	UPROPERTY(EditAnywhere, Category="Idnetify")
+	bool bAuto = false;
 
+	bool bIsRunning = false;
+	
 	/* Cool Down Sys */
 	UPROPERTY()
 	FTimerHandle CoolDownTimerHandle;
@@ -36,6 +39,9 @@ protected:
 	UPROPERTY(EditAnywhere,BlueprintReadOnly, Category="CoolDown")
 	FAwAttributeData CoolDownTimeAttributeData;
 
+	UPROPERTY(EditAnywhere,BlueprintReadOnly, Category="CoolDown")
+	FAwAttributeData  ManaCost;
+	
 	UPROPERTY(EditAnywhere,BlueprintReadOnly, Category="Level")
 	int32 AbilityLevel = 1;
 
@@ -61,6 +67,9 @@ public:
 	UFUNCTION(Blueprintable, Category = "Action")
 	UAwActionComponent* GetOwningComponent() const;
 
+	UFUNCTION(Blueprintable, Category = "Action")
+	UAWAttributeComp* GetOwningAttribute() const;
+
 	UFUNCTION(BlueprintCallable, Category="Action")
 	int32 GetAbilityLevel() const { return AbilityLevel; }
 
@@ -70,6 +79,9 @@ public:
 	UFUNCTION(BlueprintNativeEvent, Category="Action")
 	void StopAction(AActor* Instigator);
 
+	UFUNCTION()
+	bool IsAuto() const { return bAuto; }
+	
 	UFUNCTION()
 	FName GetActionName() const;
 

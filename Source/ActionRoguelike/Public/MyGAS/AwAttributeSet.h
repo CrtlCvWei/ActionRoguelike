@@ -272,6 +272,8 @@ public:
 	
 	FOnAwGameplayAttributeValueChange& GetAttributeChangeDelegate(FName AttributeName, AttributeChangedType Type);
 	
+	friend void AttributeDataChangeBroadcast(UAwAttributeSet* AttributeSet, FName AttributeName, float NewValue, float OldValue, AttributeChangedType Type);
+	
 	UFUNCTION()
 	inline void SetOwningActor();
 };

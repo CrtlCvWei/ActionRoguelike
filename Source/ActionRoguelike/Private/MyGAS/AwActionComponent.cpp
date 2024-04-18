@@ -18,9 +18,9 @@ UAwActionComponent::UAwActionComponent()
 }
 
 
-void UAwActionComponent::ApplyInstanceEffects(UAwActionEffect* Effect,AActor* Insigator,UAWAttributeComp* AttributeComp)
+inline  void UAwActionComponent::ApplyInstanceEffects(UAwActionEffect* Effect, AActor* Insigator,
+                                              UAWAttributeComp* AttributeComp)
 {
-	
 	if (Effect->GetEffectMap().Num() > 0)
 	{
 		for (auto TPAIR : Effect->GetEffectMap())
@@ -28,7 +28,7 @@ void UAwActionComponent::ApplyInstanceEffects(UAwActionEffect* Effect,AActor* In
 			FString NAME = TPAIR.Key;
 			const auto VALUE = TPAIR.Value;
 			// PRINT ON THE SCREEN
-			AttributeComp->SetAttribute(FName(*NAME), VALUE,Insigator);
+			AttributeComp->SetAttributeBase(FName(*NAME), VALUE, Insigator);
 		}
 	}
 	if (Effect->GetEffectMapForAction().Num() > 0)
@@ -38,7 +38,6 @@ void UAwActionComponent::ApplyInstanceEffects(UAwActionEffect* Effect,AActor* In
 			auto& NAME = TPAIR.Key;
 			const auto VALUE = TPAIR.Value;
 			// TODO: Effect the action
-				
 		}
 	}
 }
@@ -56,7 +55,7 @@ bool UAwActionComponent::SetOwningActor()
 	if (OwningPlayerState)
 	{
 		OwningActor = OwningPlayerState->GetPawn();
-		if(OwningActor)
+		if (OwningActor)
 			return true;
 		return false;
 	}
@@ -70,15 +69,15 @@ bool UAwActionComponent::SetOwningActor()
 	return false;
 }
 
-FAwGameplayEffectContextHandle UAwActionComponent::MakeEffectContex(AActor* Causer,UAwAction* Action)
+FAwGameplayEffectContextHandle UAwActionComponent::MakeEffectContex(AActor* Causer, UAwAction* Action)
 {
-	if(Causer == nullptr)
+	if (Causer == nullptr)
 	{
 		Causer = OwningActor;
 	}
 	FAwGameplayEffectContext* Context = new FAwGameplayEffectContext();
 	Context->SetAbility(Action);
-	FAwGameplayEffectContextHandle ContextHandle =  FAwGameplayEffectContextHandle(Context);
+	FAwGameplayEffectContextHandle ContextHandle = FAwGameplayEffectContextHandle(Context);
 	ContextHandle.AddInstigator(OwningActor, Causer);
 	// By default use the owner and avatar as the instigator and causer
 	return ContextHandle;
@@ -88,7 +87,7 @@ bool UAwActionComponent::BindCoolDownDelegate(FName ActionName, UAwUserWidget* W
 {
 	for (UAwAction* Action : Actions)
 	{
-		if(Action && Action->GetActionName() == ActionName)
+		if (Action && Action->GetActionName() == ActionName)
 		{
 			UAwSkillWidget* SkillWidget = Cast<UAwSkillWidget>(Widget);
 			Action->GetCoolDownStartDelegate().AddDynamic(SkillWidget, &UAwSkillWidget::UICoolDownStart);
@@ -110,7 +109,16 @@ bool UAwActionComponent::AddAction(TSubclassOf<UAwAction> ActionClass)
 	if (ensure(Action))
 	{
 		if (Actions.Add(Action) >= 0)
+		{
+			if (Action->IsAuto())
+			{
+				if (!OwningActor)
+					SetOwningActor();
+				if (Action->CheckActionAvailable(OwningActor))
+					Action->StartAction(OwningActor);
+			}
 			return true;
+		}
 	}
 	return false;
 }
@@ -135,15 +143,15 @@ bool UAwActionComponent::ApplyEffect(const FAwGameplayEffectContext& EffectConte
 	// Skill stores the info of effect
 	if (!Skill)
 		return false;
-	
+
 	for (auto& Effect : Skill->GetActionEffect())
 	{
 		// Apply the effect
-		UAwActionEffect*  Effect_INSTANCE = Effect.GetDefaultObject();
+		UAwActionEffect* Effect_INSTANCE = Effect.GetDefaultObject();
 		if (Effect_INSTANCE->GetType() == DurationPolicy::Instant)
 		{
 			// Apply the effect instantly
-			ApplyInstanceEffects(Effect_INSTANCE,EffectContext.GetInstigator(),AttributeComp);
+			ApplyInstanceEffects(Effect_INSTANCE, EffectContext.GetInstigator(), AttributeComp);
 		}
 		else if (Effect_INSTANCE->GetType() == DurationPolicy::Duration)
 		{
@@ -153,7 +161,6 @@ bool UAwActionComponent::ApplyEffect(const FAwGameplayEffectContext& EffectConte
 		{
 			// TODO
 		}
-		
 	}
 	return true;
 }
@@ -192,7 +199,7 @@ UAwAction* UAwActionComponent::GetActionByName(FName ActionName)
 			return Action;
 		}
 	}
-	return  nullptr;
+	return nullptr;
 }
 
 

@@ -56,7 +56,6 @@ void UAwAttributeSet::AttributeDataChangeDelegate(FName Name, float NewValue, fl
 		AttributeBaseValueChangeDelegates[Name].Broadcast(NewValue, OldValue);
 }
 
-
 UAwAttributeSet::UAwAttributeSet()
 {
 	OwningActor = nullptr;
@@ -179,4 +178,10 @@ inline void UAwAttributeSet::SetOwningActor()
 	{
 		OwningActor = Cast<AActor>( GetOuter());
 	}
+}
+
+void AttributeDataChangeBroadcast(UAwAttributeSet* AttributeSet, FName AttributeName, float NewValue, float OldValue,
+	AttributeChangedType Type)
+{
+	AttributeSet->AttributeDataChangeDelegate(AttributeName, NewValue, OldValue, Type);
 }
