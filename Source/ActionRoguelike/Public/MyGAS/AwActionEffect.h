@@ -320,11 +320,18 @@ class ACTIONROGUELIKE_API UAwActionEffect : public UObject
 	UPROPERTY(EditAnywhere, Category="Tags")
 	FGameplayTagContainer BuffTags;
 
+	UPROPERTY(EditAnywhere, Category="Tags")
+	FName MyName;
+
+	
 public:
 
 	
 	FTimerHandle DurationTimerHandle;
 	FTimerHandle PeriodTimerHandle;
+
+	UFUNCTION(BlueprintCallable)
+	FName GetEffectName() const { return MyName; }
 	
 	UFUNCTION(BlueprintCallable)
 	TEnumAsByte<DurationPolicy> GetType() { return Type; }
@@ -345,8 +352,11 @@ public:
 	void SetPeriod(const float P) { Period = P; }
 	
 	UFUNCTION(BlueprintCallable)
-	const TMap<FString, float>&  GetEffectMap() { return EffectMap; }
+	TMap<FString, float>&  GetEffectMap() { return EffectMap; }
 
+	UFUNCTION(BlueprintCallable)
+	float GetEffectMapValue(const FString& Name) { return EffectMap.FindRef(Name); }
+	
 	UFUNCTION(BlueprintCallable)
 	void SetEffectMap(const FString& Name, const float Value);
 

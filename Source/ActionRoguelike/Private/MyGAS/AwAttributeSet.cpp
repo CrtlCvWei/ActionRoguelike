@@ -70,6 +70,7 @@ void UAwAttributeSet::InitFun()
 	InitHealth(100);
 	InitMaxMana(100);
 	InitMana(100);
+	InitAttack(0);
 }
 
 void UAwAttributeSet::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const

@@ -33,7 +33,7 @@ private:
 
 	// Sets default values for this component's properties
 
-	UPROPERTY(EditDefaultsOnly, Blueprintable, Category="Attributes")
+	UPROPERTY(Replicated,EditDefaultsOnly, Blueprintable, Category="Attributes")
 	TObjectPtr<UAwAttributeSet> AttributeSet;
 
 	UPROPERTY()
@@ -51,6 +51,9 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	bool SetAttributeBase( FName AttributeName, const float v,AActor* Sourcer);
+
+	UFUNCTION(BlueprintCallable)
+	bool SetAttributeCurr( FName AttributeName, const float v,AActor* Sourcer);
 	
 	UFUNCTION(BlueprintCallable)
 	bool isAlive() const;
@@ -93,21 +96,24 @@ public:
 	UFUNCTION(BlueprintCallable)
 	UAwAttributeSet* GetAttributeSet() const { return AttributeSet; }
 
-	UPROPERTY(BlueprintAssignable)
+	UPROPERTY(Replicated,BlueprintAssignable)
 	FOnAttributeChangeSignture OnHealthChange;
 	
-	UPROPERTY(BlueprintAssignable)
+	UPROPERTY(Replicated,BlueprintAssignable)
 	FOnAttributeChangeSignture OnMaxHealthChange;
 	
-	UPROPERTY(BlueprintAssignable)
+	UPROPERTY(Replicated,BlueprintAssignable)
 	FOnAttributeChangeSignture OnManaChange;
 	
-	UPROPERTY(BlueprintAssignable)
+	UPROPERTY(Replicated,BlueprintAssignable)
 	FOnAttributeChangeSignture OnMaxManaChange;
 	
 	UFUNCTION(BlueprintCallable)
 	void AttributeChangeBoardCast(const FName Name, AActor* Instigator, float NewValue, float Change);
 
+
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+	
 	template <class UserClass>
 	UFUNCTION()
 	void AttributeChangeBind(const FString Name, UserClass* Object,void (UserClass::*Function)(AActor*,UAWAttributeComp*, float, float),FString&& FuncName)

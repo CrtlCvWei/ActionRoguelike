@@ -91,11 +91,10 @@ void AAWGameModeBase::ActorBeenKilled(AActor* Death, AActor* Killer, UAWReward* 
 	if (Player)
 	{
 		// if the player die... And the Reward is None
-		FTimerHandle ReSpawnTimerHandle;
-		FTimerDelegate Delegate;
+
 		APlayerController* PC = Cast<APlayerController>(Player->GetController());
 
-		if (ensure(PC))
+		if (ensure(PC) && !GetWorld()->GetTimerManager().IsTimerActive(ReSpawnTimerHandle))
 		{
 			Delegate.BindUFunction(this, "PlayerReSpawnTimeElasped", PC);
 			GetWorld()->GetTimerManager().SetTimer(ReSpawnTimerHandle, Delegate, 3.f, false);

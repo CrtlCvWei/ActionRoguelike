@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "AttributeSet.h"
-#include "AbilitySystemComponent.h"
+// #include "AbilitySystemComponent.h"
 #include "AwAttributeSet.generated.h"
 
 
@@ -218,7 +218,9 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Attributes")
 	FAwAttributeData MaxMana;
-	
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Attributes")
+	FAwAttributeData Attack;
 	
 	TMap<FName, FOnAwGameplayAttributeValueChange> AttributeCurrValueChangeDelegates;
 	
@@ -239,6 +241,7 @@ public:
 	AWATTRIBUTE_ACCESSORS(UAwAttributeSet, MaxHealth);
 	AWATTRIBUTE_ACCESSORS(UAwAttributeSet, Mana);
 	AWATTRIBUTE_ACCESSORS(UAwAttributeSet, MaxMana);
+	AWATTRIBUTE_ACCESSORS(UAwAttributeSet, Attack);
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attributes")
 	TMap<FName, FAwAttributeData> OtherAttributes;

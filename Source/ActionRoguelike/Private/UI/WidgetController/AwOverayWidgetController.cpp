@@ -3,6 +3,7 @@
 
 #include "UI/WidgetController/AwOverayWidgetController.h"
 
+
 void UAwOverayWidgetController::BroadcastInitVals() 
 {
 	UAWAttributeComp* AC  = AttributeComp.Get();
@@ -23,6 +24,7 @@ void UAwOverayWidgetController::BroadcastInitVals()
 	OnManaBaseChangeForUI.Broadcast(AttributeSet->GetManaBase(), AttributeSet->GetManaBase());
 	OnMaxManaBaseChangeForUI.Broadcast(AttributeSet->GetMaxManaBase(), AttributeSet->GetMaxManaBase());
 }
+
 
 void UAwOverayWidgetController::HealthBaseChangeForUI(float NewVal, float OldVal) const
 {
@@ -87,7 +89,7 @@ void UAwOverayWidgetController::BindCallBacksToDependencies()
 	AttributeSet->GetAttributeChangeDelegate(FName("MaxMana"),Base).AddUObject(this, &UAwOverayWidgetController::MaxManaBaseChangeForUI);
 
 	AttributeSet->GetAttributeChangeDelegate(FName("Health"),Current).AddUObject(this, &UAwOverayWidgetController::HealthCurrChangeForUI);
-	AttributeSet->GetAttributeChangeDelegate(FName("MaxHealth"),Current).AddUObject(this, &UAwOverayWidgetController::MaxManaCurrChangeForUI);
+	AttributeSet->GetAttributeChangeDelegate(FName("MaxHealth"),Current).AddUObject(this, &UAwOverayWidgetController::MaxHealthCurrChangeForUI);
 	AttributeSet->GetAttributeChangeDelegate(FName("Mana"),Current).AddUObject(this, &UAwOverayWidgetController::ManaCurrChangeForUI);
 	AttributeSet->GetAttributeChangeDelegate(FName("MaxMana"),Current).AddUObject(this, &UAwOverayWidgetController::MaxManaCurrChangeForUI);
 }

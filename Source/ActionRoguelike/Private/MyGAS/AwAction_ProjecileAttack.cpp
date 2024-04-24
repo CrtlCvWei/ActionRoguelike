@@ -1,12 +1,20 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "AwAction_ProjecileAttack.h"
+#include "MyGAS/AwAction_ProjecileAttack.h"
 #include "Blueprint/AwBlueprintFunctionLibrary.h"
 #include "AwCharacter.h"
 #include "AWProjectileBase.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "MyGAS/AwActionComponent.h"
+#include "Net/UnrealNetwork.h"
+
+
+UAwAction_ProjecileAttack::UAwAction_ProjecileAttack()
+{
+	HandSpawnSocketName = "Right-Wist";
+	AttackTimeDelay = 1.f;
+}
 
 
 void UAwAction_ProjecileAttack::StartAction_Implementation(AActor* Instigator)
@@ -32,18 +40,14 @@ void UAwAction_ProjecileAttack::StartAction_Implementation(AActor* Instigator)
 				Player->SetActorRotation(FRotator(0.f, CameraRotation.Yaw, 0.f));
 		}
 
-		Player->PlayAnimMontage(AttackAni, 1.);
+		PlayAttackAni(Player);
+		
 		FTimerHandle ProjectileSpawnHandle;
 		FTimerDelegate Delegate;
 		Delegate.BindUFunction(this, "StartActionTimeEnasped", Player);
 		if (ensure(GetWorld()))
 		{
-			if (AttackTimeDelay > 0.f)
-				GetWorld()->GetTimerManager().SetTimer(ProjectileSpawnHandle, Delegate, AttackTimeDelay, false);
-			else if (AttackTimeDelay == 0.f)
-			{
-				StartActionTimeEnasped(Player);
-			}
+			GetWorld()->GetTimerManager().SetTimer(ProjectileSpawnHandle, Delegate, AttackAni->Notifies[0].GetTriggerTime(), false);
 		}
 	}
 	else
@@ -99,12 +103,10 @@ void UAwAction_ProjecileAttack::StartActionTimeEnasped(AActor* Instigator)
 		Projectile = GetWorld()->SpawnActor<AActor>(ProjectileClass, LocaTM, SpawnParams);
 	}
 	// Set Effects
-	if(Effects.Num() > 0)
+	if(EffectsClass.Num() > 0)
 	{
 		// TODO : TRY USE EFFECTS[0] FOR TEST
 		
-		// UAwActionEffect* Effects_ins =  Effects[0].GetDefaultObject();
-		// Projectile is null ?
 		FAwGameplayEffectContextHandle GamePlayEffect =  GetOwningComponent()->MakeEffectContex(Projectile,this);
 		auto ProjecileBase = Cast<AAWProjectileBase>(Projectile);
 		if(ProjecileBase)
@@ -145,11 +147,6 @@ FRotator UAwAction_ProjecileAttack::GetProjectileRotation(ACharacter* Instigator
 	return ProjectileRotation;
 }
 
-UAwAction_ProjecileAttack::UAwAction_ProjecileAttack()
-{
-	HandSpawnSocketName = "Right-Wist";
-	AttackTimeDelay = 1.f;
-}
 
 bool UAwAction_ProjecileAttack::CheckActionAvailable(AActor* Instigator) const
 {
@@ -166,5 +163,19 @@ bool UAwAction_ProjecileAttack::CheckActionAvailable(AActor* Instigator) const
 
 void UAwAction_ProjecileAttack::StopAction_Implementation(AActor* Instigator)
 {
+	
 	Super::StopAction_Implementation(Instigator);
+
+}
+
+void UAwAction_ProjecileAttack::PlayAttackAni_Implementation(ACharacter* Player)
+{
+	Player->PlayAnimMontage(AttackAni, 1.);
+}
+
+void UAwAction_ProjecileAttack::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	DOREPLIFETIME(UAwAction_ProjecileAttack, ProjectileClass);
+	DOREPLIFETIME_CONDITION_NOTIFY(UAwAction_ProjecileAttack, AttackAni, COND_None, REPNOTIFY_Always);
 }

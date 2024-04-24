@@ -43,6 +43,9 @@ protected:
 	UFUNCTION()
 	void PlayerReSpawnTimeElasped(APlayerController* Controller);
 
+	FTimerHandle ReSpawnTimerHandle;
+	FTimerDelegate Delegate;
+	
 public:
 
 	UFUNCTION()

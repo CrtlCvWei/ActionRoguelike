@@ -5,6 +5,7 @@
 
 
 #include "MyGAS/AwActionComponent.h"
+#include "MyMovementComp/AwCharacterMovementComponent.h"
 #include "AWPlayerState.h"
 #include "..\Public\MyGAS/AWAttributeComp.h"
 #include "Camera/CameraComponent.h"
@@ -18,10 +19,12 @@
 
 
 // Sets default values
-AAwCharacter::AAwCharacter()
+AAwCharacter::AAwCharacter(const FObjectInitializer& ObjectInitializer):
+	Super(ObjectInitializer.SetDefaultSubobjectClass<UAwCharacterMovementComponent>(ACharacter::CharacterMovementComponentName))
 {
 	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
+
 	Init_Paramters();
 }
 
@@ -66,8 +69,24 @@ UAwActionComponent* AAwCharacter::GetOwningAction() const
 	return PS->GetPlayerAction();;
 }
 
+FCollisionQueryParams AAwCharacter::GetIgnoreCollisionParams() const
+{
+	FCollisionQueryParams Parameters;
+	TArray<AActor*> ActorChildrens;
+	GetAllChildActors(ActorChildrens);
+	Parameters.AddIgnoredActors(ActorChildrens);
+	Parameters.AddIgnoredActor(this);
+	return Parameters;
+}
+
+
+
+# pragma region Init
 void AAwCharacter::Init_Paramters()
 {
+    // My Own Movement Component
+	AwCharacterMovementComp = Cast<UAwCharacterMovementComponent>(GetCharacterMovement());
+	
 	bIsClimbing = false;
 	ArrowComp = CreateDefaultSubobject<UArrowComponent>("ArrowComponent");
 	ArrowComp->SetupAttachment(RootComponent);
@@ -92,34 +111,31 @@ void AAwCharacter::Init_Paramters()
 
 	//GAS
 
-	GetCharacterMovement()->MaxWalkSpeed = this->NormalMoveSpeed;
-	GetCharacterMovement()->GravityScale = this->GravityScale;
+	AwCharacterMovementComp->MaxWalkSpeed = this->NormalMoveSpeed;
+	AwCharacterMovementComp->GravityScale = this->GravityScale;
 	JumpMaxHoldTime = 1.0f;
 	JumpMaxCount = 1;
 	JumpKeyHoldTime = 0.5f;
-	GetCharacterMovement()->JumpZVelocity = this->JumpZVelocity;
-	GetCharacterMovement()->bOrientRotationToMovement = true;
-	GetCharacterMovement()->BrakingFriction = this->BrakingFriction;
-	GetCharacterMovement()->BrakingDecelerationWalking = this->BrakingDecelerationWalking;
-	GetCharacterMovement()->BrakingDecelerationFlying = 512.f;
-	GetCharacterMovement()->BrakingDecelerationFalling = this->BrakingDecelerationWalking;
-	GetCharacterMovement()->MaxFlySpeed = this->ClimbVectorZ;
+	AwCharacterMovementComp->JumpZVelocity = this->JumpZVelocity;
+	AwCharacterMovementComp->bOrientRotationToMovement = true;
+	AwCharacterMovementComp->BrakingFriction = this->BrakingFriction;
+	AwCharacterMovementComp->BrakingDecelerationWalking = this->BrakingDecelerationWalking;
+	AwCharacterMovementComp->BrakingDecelerationFlying = 512.f;
+	AwCharacterMovementComp->BrakingDecelerationFalling = this->BrakingDecelerationWalking;
+	AwCharacterMovementComp->MaxFlySpeed = this->ClimbVectorZ;
 
 	BaseEyeHeight = 103.;
 }
 
-// Called when the game starts or when spawned
-void AAwCharacter::BeginPlay()
+void AAwCharacter::Init_GAS()
 {
-	Super::BeginPlay();
-	//init
 	UAWAttributeComp* AttributeComp = GetOwningAttribute();
-	if (ensure(AttributeComp))
-	{
-		AttributeComp->AttributeChangeBind("Health", this, &AAwCharacter::OnHealthChange,
-		                                   "&AAwCharacter::OnHealthChange");
-	}
 
+	if(!AttributeComp)
+		return;
+	
+	AttributeComp->AttributeChangeBind("Health", this, &AAwCharacter::OnHealthChange,
+										   "&AAwCharacter::OnHealthChange");
 	if (APlayerController* PC = Cast<APlayerController>(GetController()))
 	{
 		if (AAwHUD* HUD = Cast<AAwHUD>(PC->GetHUD()))
@@ -133,6 +149,16 @@ void AAwCharacter::BeginPlay()
 			}
 		}
 	}
+	GetWorld()->GetTimerManager().ClearTimer(InitTimerHandle);
+}
+
+# pragma endregion
+// Called when the game starts or when spawned
+void AAwCharacter::BeginPlay()
+{
+	Super::BeginPlay();
+	
+	GetWorldTimerManager().SetTimer(InitTimerHandle, this, &AAwCharacter::Init_GAS, 0.2f, true);
 }
 
 // Called every frame
@@ -146,7 +172,7 @@ void AAwCharacter::Tick(float DeltaTime)
 	
 	if (!bIsClimbing && GetCharacterMovement()->IsFalling())
 	{
-		if (DetectWall() )
+		if ( AwCharacterMovementComp->TraceClimbaleSurface())
 		{
 			static FCollisionQueryParams CollisionParams;
 			static FHitResult HitResult;
@@ -158,7 +184,6 @@ void AAwCharacter::Tick(float DeltaTime)
 			if (GetWorld()->LineTraceSingleByObjectType(HitResult, Start, End,
 			                                            ECC_WorldStatic, CollisionParams))
 			{
-				
 				SwitchToClimbingMode();
 			}
 		}
@@ -213,76 +238,13 @@ void AAwCharacter::MoveRight(float Values)
 	}
 }
 
-bool AAwCharacter::DetectWall()
+void AAwCharacter::CrouchPressed()
 {
-	FVector StartLocation = GetMesh()->GetSocketLocation(RightKneeSocketName);
-	FVector EndLocation = StartLocation + GetActorForwardVector() * 150;
-	FVector BoxExtend = FVector(50, 50, 25);
-
-	FCollisionShape CollisionBox = FCollisionShape::MakeBox(BoxExtend);
-	// 创建射线参数
-	FCollisionQueryParams CollisionParams;
-	CollisionParams.AddIgnoredActor(this); // 忽略当前角色自身，避免与自身发生碰撞
-	// 执行射线检测
-	FHitResult HitResult;
-	bool bHit = GetWorld()->SweepSingleByChannel(HitResult, StartLocation, EndLocation, FQuat::Identity,
-	                                             ECC_WorldStatic, CollisionBox, CollisionParams);
-
-	if (!bHit)
-		return false;
-
-	FVector Hit_normal = HitResult.ImpactNormal;
-	FVector Hit_location = HitResult.ImpactPoint;
-
-	StartLocation = Hit_location + Hit_normal * 100;
-	EndLocation = Hit_location - Hit_normal * 200;
-	// Draw
-	// DrawDebugBox(GetWorld(), HitResult.ImpactPoint, BoxExtend, FQuat::Identity, FColor::Red, false, 2.f);
-
-	// 计算 法向量 和角色朝向夹角
-	float Angle = FMath::Acos(FVector::DotProduct(Hit_normal, -1 * GetActorForwardVector()));
-	if (abs(Angle) > 30)
-		return false;
-
-	const float Dis_thred = 100.f;
-	FVector Hit_location_pre = Hit_location;
-	FVector ZOffest = FVector(0, 0, 25);
-
-	while (bHit && Hit_location.Z < BaseEyeHeight + 100.)
-	{
-		bHit = GetWorld()->SweepSingleByObjectType(HitResult, StartLocation, EndLocation, FQuat::Identity,
-		                                           ECC_WorldStatic,
-		                                           CollisionBox, CollisionParams);
-		if (!bHit)
-			break;
-
-		Hit_normal = HitResult.ImpactNormal;
-		Hit_location = HitResult.ImpactPoint;
-
-		float Dis = FMath::Abs((Hit_location - Hit_location_pre).Dot(GetActorForwardVector()));
-		//
-
-
-		if (Dis > Dis_thred ||
-			Hit_normal.Z < -0.5 || Hit_normal.Z > 0.86)
-			return false;
-		//
-		DrawDebugBox(GetWorld(), HitResult.ImpactPoint, BoxExtend, FQuat::Identity, FColor::Red, false, 2.f);
-
-		Hit_location_pre = Hit_location;
-		StartLocation += ZOffest;
-		EndLocation += ZOffest;
-	}
-
-	if (Hit_location.Z > BaseEyeHeight + 50.)
-	{
-		GEngine->AddOnScreenDebugMessage(-1, 0.f, FColor::White, Hit_normal.ToString());
-		DrawDebugBox(GetWorld(), Hit_location, BoxExtend, FQuat::Identity, FColor::Green, false, 2.f);
-		return true;
-	}
-
-	return false;
+	AwCharacterMovementComp->CrouchPressed();
 }
+
+
+#pragma region Climb
 
 FRotator AAwCharacter::FindClimbRotation(const FVector StartLoca, const FVector EndLoca, FVector ObstacleNormalVec)
 {
@@ -378,6 +340,7 @@ void AAwCharacter::SwitchToClimbingMode()
 	bIsClimbing = true;
 	GetMesh()->SetRelativeLocation(FVector(-20, 0, -120));
 	GetCapsuleComponent()->SetCapsuleHalfHeight(60);
+	GetCharacterMovement()->AddForce(GetActorForwardVector() * 150000);
 }
 
 void AAwCharacter::RidOffClimbingMode()
@@ -500,6 +463,8 @@ bool AAwCharacter::DetectAndClimbUp()
 	return false;
 }
 
+#pragma endregion
+
 void AAwCharacter::OnHealthChange(AActor* InstigatorActor, UAWAttributeComp* AttributeComponent, float NewHealth,
                                   float Change)
 {
@@ -521,7 +486,6 @@ void AAwCharacter::OnHealthChange(AActor* InstigatorActor, UAWAttributeComp* Att
 		                                 "Player Attribute is not found\n In FUN AAwCharacter::OnHealthChange");
 	}
 }
-
 void AAwCharacter::HealSelf(float v)
 {
 	if (UAWAttributeComp* PlayerAttribute = GetOwningAttribute())
@@ -538,16 +502,14 @@ void AAwCharacter::Jump()
 {
 	// SetActorRelativeRotation(FRotator(0, 90.f + GetActorRotation().Yaw,0));
 	Super::Jump();
-	if (DetectWall())
+	if (AwCharacterMovementComp->TraceClimbaleSurface())
 	{
+		if(bIsClimbing || !AwCharacterMovementComp) return;
 		FHitResult HitResult;
-		FCollisionQueryParams CollisionParams;
-		CollisionParams.AddIgnoredActor(this); // 忽略当前角色自身，避免与自身发生碰撞
 		bool bHit = GetWorld()->LineTraceSingleByObjectType(HitResult, GetMesh()->GetSocketLocation("Hips"),
 		                                                    GetMesh()->GetSocketLocation("Hips") +
 		                                                    GetActorForwardVector() * 100, ECC_WorldStatic,
-		                                                    CollisionParams);
-
+		                                                    GetIgnoreCollisionParams());
 		if (bHit)
 		{
 			SwitchToClimbingMode();
@@ -557,8 +519,6 @@ void AAwCharacter::Jump()
 			FRotator NewRotator = FRotationMatrix::MakeFromX(-HitResult.ImpactNormal).Rotator();
 			GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Black,
 			                                 "Hit normal: " + (HitResult.ImpactNormal * -1).ToString());
-			SetActorLocation(HitResult.ImpactPoint + HitResult.Normal * 45);
-			SetActorRotation(NewRotator);
 			ClimbRotator = NewRotator;
 		}
 	}
@@ -647,6 +607,7 @@ void AAwCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 	PlayerInputComponent->BindAction("Jump", IE_Released, this, &AAwCharacter::StopJumping);
 	PlayerInputComponent->BindAction("Sprint", IE_Pressed, this, &AAwCharacter::BeginSprint);
 	PlayerInputComponent->BindAction("Sprint", IE_Released, this, &AAwCharacter::EndSprint);
+	PlayerInputComponent->BindAction("Crouch",IE_Pressed, this, &AAwCharacter::CrouchPressed);
 	PlayerInputComponent->BindAction("PrimaryAttack", IE_Pressed, this, &AAwCharacter::PrimaryAttack);
 	PlayerInputComponent->BindAction("PrimaryInteract", IE_Pressed, this, &AAwCharacter::PrimaryInterat);
 	PlayerInputComponent->BindAction("BlackHoleAbility", IE_Pressed, this, &AAwCharacter::BlackHoleAbility);

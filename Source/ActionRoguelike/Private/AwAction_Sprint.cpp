@@ -5,7 +5,7 @@
 
 #include "AwCharacter.h"
 #include "AWPlayerState.h"
-#include "GameFramework/CharacterMovementComponent.h"
+#include "MyMovementComp/AwCharacterMovementComponent.h"
 
 inline AActor* UAwAction_Sprint::GetTheOwner() const
 {
@@ -17,13 +17,14 @@ void UAwAction_Sprint::StartAction_Implementation(AActor* Instigator)
 {
 	Super::StartAction_Implementation(Instigator);
 	AActor* Owner = GetTheOwner();
-	if(Owner == nullptr)
+	if (Owner == nullptr)
 	{
 		return;
 	}
-	if(AAwCharacter* AwOwner = Cast<AAwCharacter>(Owner))
+	if (AAwCharacter* AwOwner = Cast<AAwCharacter>(Owner))
 	{
-		AwOwner->GetCharacterMovement()->MaxWalkSpeed = MaxSpeed;
+		auto AwMoveComp = Cast<UAwCharacterMovementComponent>(AwOwner->GetCharacterMovement());
+		AwMoveComp->Sprint();
 		bIsRunning = true;
 	}
 }
@@ -33,9 +34,10 @@ void UAwAction_Sprint::StopAction_Implementation(AActor* Instigator)
 	if (bIsRunning)
 	{
 		Super::StopAction_Implementation(Instigator);
-		if(AAwCharacter* Owner = Cast<AAwCharacter>(GetTheOwner()))
+		if (AAwCharacter* Owner = Cast<AAwCharacter>(GetTheOwner()))
 		{
-			Owner->GetCharacterMovement()->MaxWalkSpeed = NormalMoveSpeed;
+			auto AwMoveComp = Cast<UAwCharacterMovementComponent>(Owner->GetCharacterMovement());
+			AwMoveComp->EndSprint();
 		}
 	}
 }

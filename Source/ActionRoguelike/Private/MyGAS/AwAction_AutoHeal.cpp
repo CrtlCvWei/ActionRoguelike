@@ -7,48 +7,26 @@
 UAwAction_AutoHeal::UAwAction_AutoHeal()
 {
 	bAuto = true;
-	HealPeriod = 0.1f;
 	CoolDownTimeAttributeData = FAwAttributeData(0);
 }
 
-void UAwAction_AutoHeal::CacheEffects()
+void UAwAction_AutoHeal::StopAction_Implementation(AActor* Instigator)
 {
-	for (auto& Effect : Effects)
+	ActionComp = GetOwningComponent();
+	if (!ensure(ActionComp))
+		return;
+	if (EffectsClass.Num() > 0)
 	{
-		UAwActionEffect* Effect_INSTANCE = Effect.GetDefaultObject();
-		if (Effect_INSTANCE->GetType() == DurationPolicy::Instant)
+		for (auto Effect : EffectsClass)
 		{
-			for (const auto& Pair : Effect_INSTANCE->GetEffectMap())
+			auto Effect_Instance = Effect.GetDefaultObject();
+			if (Effect_Instance->GetType() == DurationPolicy::Periodic)
 			{
-				if (EffectCache.Find(FName(Pair.Key)) == nullptr)
-					EffectCache.Add(FName(Pair.Key), Pair.Value);
-				else
-				{
-					EffectCache[FName(Pair.Key)] += Pair.Value;
-				}
+				ActionComp->RemovePeriodicEffectsByForce(Effect_Instance);
 			}
 		}
 	}
-}
-
-void UAwAction_AutoHeal::HealPerTick(AActor* Instigator)
-{
-
-	for (auto& Pair : EffectCache)
-	{
-		if(Pair.Key == "Health" && AttributeComp->GetHealth() == AttributeComp->GetMaxHealth())
-			return;
-		else if(Pair.Key == "Mana" && AttributeComp->GetMana() == AttributeComp->GetMaxMana())
-			return;
-		AttributeComp->SetAttributeBase(Pair.Key, Pair.Value, Instigator);
-	}
-}
-
-
-void UAwAction_AutoHeal::StopAction_Implementation(AActor* Instigator)
-{
 	Super::StopAction_Implementation(Instigator);
-	GetWorld()->GetTimerManager().ClearTimer(HealTimerHandle);
 }
 
 bool UAwAction_AutoHeal::CheckActionAvailable(AActor* Instigator) const
@@ -60,11 +38,31 @@ void UAwAction_AutoHeal::StartAction_Implementation(AActor* Instigator)
 {
 	Super::StartAction_Implementation(Instigator);
 	AttributeComp = UAwBlueprintFunctionLibrary::GetAwAttributeComponent(Instigator);
-	FTimerDelegate Delegate;
-	Delegate.BindUFunction(this, "HealPerTick", Instigator);
-	if (ensure(GetWorld()) && Effects.Num() > 0 && AttributeComp)
+	ActionComp = GetOwningComponent();
+	if (!ensure(ActionComp))
+		return;
+	if (EffectsClass.Num() > 0)
 	{
-		CacheEffects();
-		GetWorld()->GetTimerManager().SetTimer(HealTimerHandle, Delegate, HealPeriod, true);
+		for (auto Effect : EffectsClass)
+		{
+			auto Effect_Instance = Effect.GetDefaultObject();
+			if (Effect_Instance->GetType() == DurationPolicy::Periodic)
+			{
+				FTimerHandle TimerHandle;
+				GetWorld()->GetTimerManager().SetTimer(TimerHandle, [this, Effect_Instance, Instigator]()
+				{
+					ActionComp->ApplyPeriodicEffects(Effect_Instance, Instigator, AttributeComp);
+				}, 0.1f, false);
+			}
+			if (Effect_Instance->GetType() == DurationPolicy::Duration)
+			{
+				FTimerHandle TimerHandle;
+				GetWorld()->GetTimerManager().SetTimer(TimerHandle, [this, Effect_Instance, Instigator]()
+				{
+					ActionComp->ApplyDurationEffects(Effect_Instance, Instigator, AttributeComp);
+				}, 0.1f, false);
+			
+			}
+		}
 	}
 }

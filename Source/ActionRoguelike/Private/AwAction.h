@@ -49,8 +49,11 @@ protected:
 	FAwAttributeData CostAttributeData;
 
 	UPROPERTY(EditAnywhere, Category="GamePlay Effect")
-	TArray<TSubclassOf<UAwActionEffect>> Effects;
+	TArray<TSubclassOf<UAwActionEffect>> EffectsClass;
 
+	UPROPERTY(VisibleDefaultsOnly,Category="GamePlay Effect")
+	TArray<UAwActionEffect*> EffectInstances;
+	
 	UPROPERTY(EditAnywhere, Category="Tags")
 	FGameplayTagContainer GrandTags;
 	UPROPERTY(EditAnywhere, Category="Tags")
@@ -102,4 +105,7 @@ public:
 		
 	UFUNCTION(BlueprintCallable)
 	TArray<TSubclassOf<UAwActionEffect>>& GetActionEffect();
+
+	UFUNCTION()
+	void CreateEffectInstances();
 };

@@ -18,9 +18,11 @@ UAwActionComponent::UAwActionComponent()
 }
 
 
-inline  void UAwActionComponent::ApplyInstanceEffects(UAwActionEffect* Effect, AActor* Insigator,
+void UAwActionComponent::ApplyInstanceEffects(UAwActionEffect* Effect, AActor* Insigator,
                                               UAWAttributeComp* AttributeComp)
 {
+	if (!AttributeComp)
+		return;
 	if (Effect->GetEffectMap().Num() > 0)
 	{
 		for (auto TPAIR : Effect->GetEffectMap())
@@ -28,6 +30,14 @@ inline  void UAwActionComponent::ApplyInstanceEffects(UAwActionEffect* Effect, A
 			FString NAME = TPAIR.Key;
 			const auto VALUE = TPAIR.Value;
 			// PRINT ON THE SCREEN
+			if (VALUE == 0.f)
+				return;
+			if (NAME == "Health" && VALUE > 0.f)
+				if (AttributeComp->GetHealth() == AttributeComp->GetMaxHealth())
+					return;
+			if (NAME == "Mana" && VALUE > 0.f)
+				if (AttributeComp->GetMana() == AttributeComp->GetMaxMana())
+					return;
 			AttributeComp->SetAttributeBase(FName(*NAME), VALUE, Insigator);
 		}
 	}
@@ -40,6 +50,123 @@ inline  void UAwActionComponent::ApplyInstanceEffects(UAwActionEffect* Effect, A
 			// TODO: Effect the action
 		}
 	}
+}
+
+void UAwActionComponent::ApplyPeriodicEffects(UAwActionEffect* Effect, AActor* Insigator,
+                                              UAWAttributeComp* AttributeComp)
+{
+	GetWorld()->GetTimerManager().SetTimer(Effect->PeriodTimerHandle, [this,Effect,Insigator,AttributeComp ]()
+	                                       {
+		                                       // If the attribute component is not valid, remove the effect
+		                                       if (!AttributeComp)
+		                                       {
+			                                       this->RemovePeriodicEffects(
+				                                       Effect, Insigator, AttributeComp, Effect->DurationTimerHandle,
+				                                       Effect->PeriodTimerHandle);
+		                                       }
+
+		                                       this->ApplyInstanceEffects(Effect, Insigator, AttributeComp);
+	                                       }
+	                                       , Effect->GetPeriod(), true);
+
+	EffectsGamePlayTags.AppendTags(Effect->GetBuffTags());
+	EffectObjectsPools.Add(Effect->GetEffectName(), FAwEffectRecorder(Insigator, AttributeComp, Effect));
+	if (Effect->GetDuration() > 0)
+	{
+		FTimerDelegate Delegate;
+		Delegate.BindUFunction(this, "RemovePeriodicEffects", Effect, Insigator, AttributeComp,
+		                       Effect->DurationTimerHandle,
+		                       Effect->PeriodTimerHandle);
+		GetWorld()->GetTimerManager().SetTimer(Effect->DurationTimerHandle, Delegate, Effect->GetDuration(), false);
+	}
+}
+
+void UAwActionComponent::RemovePeriodicEffects(UAwActionEffect* Effect, AActor* Insigator,
+                                               UAWAttributeComp* AttributeComp, FTimerHandle& DurationTimerHandle,
+                                               FTimerHandle& PeriodTimerHandle)
+{
+	if (GetWorld()->GetTimerManager().GetTimerRemaining(PeriodTimerHandle) < KINDA_SMALL_NUMBER)
+		ApplyInstanceEffects(Effect, Insigator, AttributeComp);
+	GetWorld()->GetTimerManager().ClearTimer(DurationTimerHandle);
+	GetWorld()->GetTimerManager().ClearTimer(PeriodTimerHandle);
+	EffectsGamePlayTags.RemoveTags(Effect->GetBuffTags());
+	EffectObjectsPools.Remove(Effect->GetEffectName());
+}
+
+void UAwActionComponent::RemovePeriodicEffectsByForce(UAwActionEffect* Effect)
+{
+	if (EffectObjectsPools.Contains(Effect->GetEffectName()))
+	{
+		auto EffectContext = EffectObjectsPools[Effect->GetEffectName()];
+		RemovePeriodicEffects(Effect, EffectContext.Insigator, EffectContext.AttributeComp, Effect->DurationTimerHandle,
+		                      Effect->PeriodTimerHandle);
+	}
+}
+
+void UAwActionComponent::ApplyDurationEffects(UAwActionEffect* Effect, AActor* Insigator,
+	UAWAttributeComp* AttributeComp)
+{
+
+	if (!AttributeComp)
+		return;
+	if (Effect->GetEffectMap().Num() > 0)
+	{
+		for (auto TPAIR : Effect->GetEffectMap())
+		{
+			FString NAME = TPAIR.Key;
+			const auto VALUE = TPAIR.Value;
+			// PRINT ON THE SCREEN
+			if (VALUE == 0.f)
+				return;
+			if (NAME == "Health" && VALUE > 0.f)
+				if (AttributeComp->GetHealth() == AttributeComp->GetMaxHealth())
+					return;
+			if (NAME == "Mana" && VALUE > 0.f)
+				if (AttributeComp->GetMana() == AttributeComp->GetMaxMana())
+					return;
+			AttributeComp->SetAttributeCurr(FName(*NAME), VALUE, Insigator);
+		}
+	}
+	EffectsGamePlayTags.AppendTags(Effect->GetBuffTags());
+	EffectObjectsPools.Add(Effect->GetEffectName(), FAwEffectRecorder(Insigator, AttributeComp, Effect));
+	
+	if (Effect->GetDuration() > 0)
+	{
+		FTimerDelegate Delegate;
+		Delegate.BindUFunction(this, "RemoveDurationEffects", Effect, Insigator, AttributeComp,
+							   Effect->DurationTimerHandle,
+							   Effect->PeriodTimerHandle);
+		GetWorld()->GetTimerManager().SetTimer(Effect->DurationTimerHandle, Delegate, Effect->GetDuration(), false);
+	}
+}
+
+void UAwActionComponent::RemoveDurationEffects(UAwActionEffect* Effect, AActor* Insigator,
+	UAWAttributeComp* AttributeComp, FTimerHandle& DurationTimerHandle, FTimerHandle& PeriodTimerHandle)
+{
+	if (!AttributeComp)
+		return;
+	if (Effect->GetEffectMap().Num() > 0)
+	{
+		for (auto TPAIR : Effect->GetEffectMap())
+		{
+			FString NAME = TPAIR.Key;
+			const auto VALUE = TPAIR.Value;
+			// PRINT ON THE SCREEN
+			if (VALUE == 0.f)
+				return;
+			if (NAME == "Health" && VALUE > 0.f)
+				if (AttributeComp->GetHealth() == AttributeComp->GetMaxHealth())
+					return;
+			if (NAME == "Mana" && VALUE > 0.f)
+				if (AttributeComp->GetMana() == AttributeComp->GetMaxMana())
+					return;
+			AttributeComp->SetAttributeCurr(FName(*NAME), -VALUE, Insigator);
+		}
+	}
+	GetWorld()->GetTimerManager().ClearTimer(DurationTimerHandle);
+	GetWorld()->GetTimerManager().ClearTimer(PeriodTimerHandle);
+	EffectsGamePlayTags.RemoveTags(Effect->GetBuffTags());
+	EffectObjectsPools.Remove(Effect->GetEffectName());
 }
 
 // Called when the game starts
@@ -65,7 +192,6 @@ bool UAwActionComponent::SetOwningActor()
 		OwningActor = Actor;
 		return true;
 	}
-
 	return false;
 }
 
@@ -106,9 +232,10 @@ bool UAwActionComponent::AddAction(TSubclassOf<UAwAction> ActionClass)
 	}
 
 	UAwAction* Action = NewObject<UAwAction>(this, ActionClass);
+	Action->CreateEffectInstances();
 	if (ensure(Action))
 	{
-		if (Actions.Add(Action) >= 0)
+		if (Actions.Contains(Action) || Actions.Add(Action) >= 0)
 		{
 			if (Action->IsAuto())
 			{
@@ -148,6 +275,10 @@ bool UAwActionComponent::ApplyEffect(const FAwGameplayEffectContext& EffectConte
 	{
 		// Apply the effect
 		UAwActionEffect* Effect_INSTANCE = Effect.GetDefaultObject();
+		// test
+
+		// GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Yellow, FString::Printf(TEXT("The Damage is  %f"), Effect_INSTANCE->GetEffectMapValue("Health")));	
+		
 		if (Effect_INSTANCE->GetType() == DurationPolicy::Instant)
 		{
 			// Apply the effect instantly
@@ -156,10 +287,16 @@ bool UAwActionComponent::ApplyEffect(const FAwGameplayEffectContext& EffectConte
 		else if (Effect_INSTANCE->GetType() == DurationPolicy::Duration)
 		{
 			// TODO:
+			ApplyDurationEffects(Effect_INSTANCE, EffectContext.GetInstigator(), AttributeComp);
 		}
 		else if (Effect_INSTANCE->GetType() == DurationPolicy::infinite)
 		{
 			// TODO
+		}
+		else if (Effect_INSTANCE->GetType() == DurationPolicy::Periodic)
+		{
+			// Apply the effect periodically
+			ApplyPeriodicEffects(Effect_INSTANCE, EffectContext.GetInstigator(), AttributeComp);
 		}
 	}
 	return true;

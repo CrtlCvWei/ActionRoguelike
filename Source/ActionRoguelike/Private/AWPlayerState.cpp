@@ -3,6 +3,8 @@
 
 #include "AWPlayerState.h"
 
+#include "Net/UnrealNetwork.h"
+
 int32 AAWPlayerState::GetCredits() const
 {
 	return Credits;
@@ -78,10 +80,19 @@ UAwActionComponent* AAWPlayerState::GetPlayerAction() const
 	return PlayerActionComp;
 }
 
+void AAWPlayerState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(AAWPlayerState,PlayerAttributeComp);
+	DOREPLIFETIME(AAWPlayerState,PlayerActionComp);
+}
+
 AAWPlayerState::AAWPlayerState()
 {
 	PlayerAttributeComp = CreateDefaultSubobject<UAWAttributeComp>(TEXT("PlayerAttributeComp"));
 	PlayerActionComp = CreateDefaultSubobject<UAwActionComponent>(TEXT("PlayerActionComp"));
+	bReplicates = true;
 	// PlayerActionComp->SetOwningActor();
 	// PlayerAttributeComp->GetAttributeSet()->SetOwningActor();
 	// PlayerAttributeComp->SetOwningActor();

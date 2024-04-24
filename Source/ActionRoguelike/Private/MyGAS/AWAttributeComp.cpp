@@ -6,6 +6,7 @@
 #include "AWGameModeBase.h"
 #include "AWReward.h"
 #include "GameFramework/PlayerState.h"
+#include "Net/UnrealNetwork.h"
 
 #define print(text) if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 1.5, FColor::White,text)
 
@@ -120,7 +121,8 @@ bool UAWAttributeComp::SetAttributeBase(FName AttributeName, const float v,AActo
 	}
 	else
 		return false;
-
+	
+	
 	float NewValue = Data->GetBaseValue() + v;
 	const float MaxValue = GetAttributeBase(FName("Max"+AttributeName.ToString()));
 	NewValue = NewValue > MaxValue ? MaxValue : NewValue;
@@ -131,6 +133,44 @@ bool UAWAttributeComp::SetAttributeBase(FName AttributeName, const float v,AActo
 	
 	check(NewValue == Data->GetBaseValue());
 	
+	// trigger the event!
+	NewValue += Data->GetCurrentValue();
+	AttributeChangeBoardCast(AttributeName, Sourcer, NewValue, v);
+	return true;
+}
+
+bool UAWAttributeComp::SetAttributeCurr(FName AttributeName, const float v, AActor* Sourcer)
+{
+	//TODO: MAKE SET ATTRIBUTE FUNCTION WORK
+	
+	// if (AttributeName == "Health" || AttributeName == "health" )
+	// {
+	// 	return SetHealth(v,Sourcer);
+	// }
+	// Other Case
+	static  FAwAttributeData* Data = nullptr;
+	auto& Attr = this->AttributeSet;
+	FProperty* Prop = FindFieldChecked<FProperty>(AttributeSet.GetClass(), AttributeName);
+	if(!Prop)
+		return false;
+	if (Prop->GetCPPType().Equals(TEXT("FAwAttributeData")))
+	{
+		Data = Prop->ContainerPtrToValuePtr<FAwAttributeData>(Attr);
+		if(!Data)
+			return false;
+	}
+	else
+		return false;
+	
+	float NewCurrValue = Data->GetCurrentValue() + v;
+
+	Data->SetCurrentValue(NewCurrValue);
+	
+	AttributeDataChangeBroadcast(AttributeSet, AttributeName,  Data->GetCurrentValue(),NewCurrValue - v,AttributeChangedType::Current);
+	
+	check(NewCurrValue == Data->GetCurrentValue());
+	
+	float NewValue = Data->GetCurrentValue() + Data->GetBaseValue();
 	// trigger the event!
 	AttributeChangeBoardCast(AttributeName, Sourcer, NewValue, v);
 	return true;
@@ -149,7 +189,7 @@ inline  float UAWAttributeComp::GetAttributeBase(FName AttributeName) const
 	auto Attr = GetAttributeData(AttributeName);
 	if (Attr.IsNotVaild())
 	{
-		return -std::numeric_limits<float>::infinity();
+		return std::numeric_limits<float>::infinity();
 	}
 	// return the base value	
 	return Attr.GetBaseValue();
@@ -195,4 +235,10 @@ void UAWAttributeComp::AttributeChangeBoardCast(const FName Name, AActor* Instig
 	{
 		AllAttributeChangeMap[Name].Broadcast(Instigator, this, NewValue, Change);
 	}
+}
+
+void UAWAttributeComp::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	DOREPLIFETIME(UAWAttributeComp, AttributeSet);
 }

@@ -13,22 +13,13 @@ UCLASS()
 class ACTIONROGUELIKE_API UAwAction_AutoHeal : public UAwAction
 {
 	GENERATED_BODY()
-
-	FTimerHandle HealTimerHandle;
-
-	UPROPERTY()
-	UAWAttributeComp* AttributeComp;
-protected:
 	
-	UPROPERTY(EditAnywhere,BlueprintReadOnly, Category="Heal")
-	float HealPeriod;
-
-	UFUNCTION(BlueprintCallable)
-	virtual  void HealPerTick(AActor* Instigator);
-
+	UPROPERTY()
+	TObjectPtr<UAWAttributeComp> AttributeComp;
 
 	UPROPERTY()
-	TMap<FName,float> EffectCache;
+	TObjectPtr<UAwActionComponent> ActionComp;
+
 	
 public:
 	UAwAction_AutoHeal();

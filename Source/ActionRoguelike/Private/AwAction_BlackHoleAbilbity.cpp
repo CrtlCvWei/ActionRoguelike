@@ -97,7 +97,7 @@ void UAwAction_BlackHoleAbilbity::StartAction_TimeElasped(ACharacter* Instigator
 			GetWorld()->GetTimerManager().SetTimer(ExplosiveTimerHandle,
 			                                       Delegate,
 			                                       ExplosiveTimeDelay, false);
-			if (Effects.Num() > 0)
+			if (EffectsClass.Num() > 0)
 			{
 				// TODO : TRY USE EFFECTS[0] FOR TEST
 

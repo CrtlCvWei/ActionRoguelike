@@ -8,6 +8,7 @@
 // #include "MyGAS/AwAttributeSet.h"
 #include "AwCharacter.generated.h"
 
+class UAwCharacterMovementComponent;
 class UAwActionComponent;
 class UCameraComponent;
 class USpringArmComponent;
@@ -35,13 +36,18 @@ private:
 	const float BrakingDecelerationWalking = 10.f;
 	const float ClimbVectorZ = 170.f;
 	const float ClimbVectorX = 100.f;
+	
 	UFUNCTION()
 	void Init_Paramters();
-
+	
+	FTimerHandle InitTimerHandle;
+	
+	UFUNCTION()
+	void Init_GAS();
 
 public:
 	// Sets default values for this character's properties
-	AAwCharacter();
+	AAwCharacter(const FObjectInitializer& ObjectInitializer);
 
 protected:
 	
@@ -64,6 +70,9 @@ protected:
 	UPROPERTY(VisibleAnywhere)
 	UAWInteractionComponent* InteractionComp;
 
+	UPROPERTY(VisibleAnywhere)
+	UAwCharacterMovementComponent* AwCharacterMovementComp;
+
 	// GAS demo
 
 	UPROPERTY(EditAnywhere,BlueprintReadOnly,Category="ClimbAndVault")
@@ -71,33 +80,37 @@ protected:
 	
 	
 	//Basic Actions
+	UFUNCTION()
 	void MoveForward(float Values);
+	UFUNCTION()
 	void MoveRight(float Values);
+
+
+	void CrouchPressed();
+	
 	virtual void Jump() override;
+	
+	UFUNCTION()
 	virtual void ClearJumpInput(float DeltaTime) override;
+	
 	virtual void StopJumping() override;
 	//Attack Action
-	
+	UFUNCTION()
 	void PrimaryAttack();
+	UFUNCTION()
 	void BlackHoleAbility();
+	UFUNCTION()
 	void BeginSprint();
+	UFUNCTION()
 	void EndSprint();
 	
 	
 	//Interact
+	UFUNCTION()
 	void PrimaryInterat();
 	FVector GetPawnViewLocation() const override;
 	
 	void Deadth();
-	//Camera Shake
-	// TSubclassOf<UCameraShake> CameraShakeClass = UMyCameraShake::StaticClass();
-
-	// Trigger the camera shake effect
-	// APlayerController* PlayerController = UGameplayStatics::GetPlayerController(this, 0);
-	// if (PlayerController)
-	// {
-	// 	PlayerController->ClientPlayCameraShake(CameraShakeClass);
-	// }
 
 	FTimerHandle JumpTimerHandle; // 创建一个FTimerHandle对象
 	FTimerHandle ProjectileSpawnHandle;//
@@ -117,7 +130,7 @@ protected:
 	void ClimbingTick();
 	
 	FRotator ClimbRotator = FRotator::ZeroRotator;
-	bool DetectWall();
+
 	FRotator FindClimbRotation(const FVector StartLoca,const FVector EndLoca, FVector ObstacleNormalVec); 
 	
 	
@@ -156,4 +169,9 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	UAwActionComponent* GetOwningAction() const;
+
+	FCollisionQueryParams GetIgnoreCollisionParams() const;
+	
+	UFUNCTION(BlueprintCallable)
+	FORCEINLINE UAwCharacterMovementComponent* GetAwCharacterMovement() const { return AwCharacterMovementComp; }
 };

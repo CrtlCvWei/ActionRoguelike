@@ -17,6 +17,14 @@ UAwAction::UAwAction()
 {
 	bIsRunning = false;
 	InitAtt();
+	for (const auto EffectClass : EffectsClass)
+	{
+		UAwActionEffect* Effect = NewObject<UAwActionEffect>(this, EffectClass);
+		if (Effect)
+		{
+			EffectInstances.Add(Effect);
+		}
+	}
 }
 
 void UAwAction::StartAction_Implementation(AActor* Instigator)
@@ -88,7 +96,19 @@ bool UAwAction::CheckActionAvailable(AActor* Instigator) const
 TArray<TSubclassOf<UAwActionEffect>>& UAwAction::GetActionEffect()
 {
 	// TODO: Implement this function later
-	return Effects;
+	return EffectsClass;
+}
+
+void UAwAction::CreateEffectInstances()
+{
+	for(auto const EffectClass: EffectsClass)
+	{
+		UAwActionEffect* Effect = NewObject<UAwActionEffect>(this, EffectClass);
+		if (Effect)
+		{
+			EffectInstances.Add(Effect);
+		}
+	}
 }
 
 

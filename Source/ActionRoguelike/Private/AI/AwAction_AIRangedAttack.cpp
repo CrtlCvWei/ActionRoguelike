@@ -30,7 +30,7 @@ void UAwAction_AIRangedAttack::StartActionTimeEnasped(AActor* Instigator)
 		Projectile = GetWorld()->SpawnActor<AActor>(ProjectileClass, LocaTM, SpawnParams);
 	}
 	// Set Effects
-	if (Effects.Num() > 0)
+	if (EffectsClass.Num() > 0)
 	{
 		// TODO : TRY USE EFFECTS[0] FOR TEST
 		// Projectile is null ?

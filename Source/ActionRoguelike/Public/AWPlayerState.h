@@ -23,10 +23,10 @@ protected:
 	int32 Credits = 0;
 	int32 Scores = 0;
 
-	UPROPERTY(BlueprintReadOnly,Category="PlayerAttribute")
+	UPROPERTY(Replicated,BlueprintReadOnly,Category="PlayerAttribute")
 	TObjectPtr<UAWAttributeComp> PlayerAttributeComp = nullptr;
 
-	UPROPERTY(BlueprintReadOnly,Category="PlayerAttribute")
+	UPROPERTY(Replicated,BlueprintReadOnly,Category="PlayerAttribute")
 	TObjectPtr<UAwActionComponent> PlayerActionComp = nullptr;
 public:
 	
@@ -52,5 +52,6 @@ public:
 
 	UFUNCTION(BlueprintCallable,Category="PlayerAttribute")
 	inline  UAwActionComponent* GetPlayerAction() const;
-	
+
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 };
