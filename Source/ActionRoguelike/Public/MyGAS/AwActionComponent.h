@@ -26,13 +26,28 @@ struct FAwEffectRecorder
 	UPROPERTY()
 	UAwActionEffect* Effect;
 
+	UPROPERTY()
+	FTimerHandle TimerHandle;
+
 	explicit FAwEffectRecorder() = default;
 	
-	explicit  FAwEffectRecorder(AActor* ins, UAWAttributeComp* att,UAwActionEffect* eff):
+	explicit  FAwEffectRecorder(AActor* ins, UAWAttributeComp* att,UAwActionEffect* eff,FTimerHandle& timer):
 		Insigator(ins),
 		AttributeComp(att),
-		Effect(eff)
+		Effect(eff),
+		TimerHandle(timer)
 	{}
+
+	FAwEffectRecorder& operator=(const FAwEffectRecorder& other)
+	{
+		if(this == &other)
+			return *this;
+		Insigator = other.Insigator;
+		AttributeComp = other.AttributeComp;
+		Effect = other.Effect;
+		TimerHandle = other.TimerHandle;
+		return *this;
+	}
 	
 };
 

@@ -3,11 +3,11 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "AWInteractionComponent.h"
+
 #include "GameFramework/Character.h"
-// #include "MyGAS/AwAttributeSet.h"
 #include "AwCharacter.generated.h"
 
+class UInputAction;
 class UAwCharacterMovementComponent;
 class UAwActionComponent;
 class UCameraComponent;
@@ -15,6 +15,7 @@ class USpringArmComponent;
 class UAWInteractionComponent;
 class UAWAttributeComp;
 class UAnimMontage;
+class UAwCharacterMovementComponent;
 
 
 // 委托多播
@@ -54,8 +55,6 @@ protected:
 	UPROPERTY()
 	UArrowComponent* ArrowComp;
 	
-	UPROPERTY()
-	bool bIsClimbing;
 	
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -78,13 +77,13 @@ protected:
 	UPROPERTY(EditAnywhere,BlueprintReadOnly,Category="ClimbAndVault")
 	FName RightKneeSocketName;
 	
+
 	
 	//Basic Actions
 	UFUNCTION()
 	void MoveForward(float Values);
 	UFUNCTION()
 	void MoveRight(float Values);
-
 
 	void CrouchPressed();
 	
@@ -114,8 +113,7 @@ protected:
 
 	FTimerHandle JumpTimerHandle; // 创建一个FTimerHandle对象
 	FTimerHandle ProjectileSpawnHandle;//
-
-
+	
 	// trace detection
 	UPROPERTY(BlueprintAssignable)
 	FClimingUpSignature ClimbingUp;
@@ -125,17 +123,7 @@ protected:
 
 	UPROPERTY(EditAnywhere,Category="ClimbAndVault")
 	UAnimMontage* ClimbUpMontage;
-
-	UFUNCTION(BlueprintCallable)
-	void ClimbingTick();
 	
-	FRotator ClimbRotator = FRotator::ZeroRotator;
-
-	FRotator FindClimbRotation(const FVector StartLoca,const FVector EndLoca, FVector ObstacleNormalVec); 
-	
-	
-	UFUNCTION(BlueprintCallable)
-	void SwitchToClimbingMode();
 	UFUNCTION(BlueprintCallable)
 	void RidOffClimbingMode();
 	UFUNCTION()
@@ -144,6 +132,8 @@ protected:
 	void MoveRightWhenClimbing(float Values);
 	UFUNCTION()
 	bool DetectAndClimbUp();
+	UFUNCTION()
+	void EdgeClimbing();
 	
 	//
 	UFUNCTION()
@@ -157,7 +147,7 @@ public:
 	virtual void Tick(float DeltaTime) override;
 
 	UFUNCTION(BlueprintCallable)
-	bool GetIsClimbing() const { return bIsClimbing; }
+	bool GetIsClimbing() const;
 	
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;

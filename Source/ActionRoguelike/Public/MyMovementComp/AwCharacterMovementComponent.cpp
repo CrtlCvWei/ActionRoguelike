@@ -59,7 +59,7 @@ void UAwCharacterMovementComponent::PhysSlide(float deltaTime, int32 Iterations)
 	bJustTeleported = false;
 
 	FVector OldLoca = UpdatedComponent->GetComponentLocation();
-	FQuat OldRotation = UpdatedComponent->GetComponentQuat();
+
 	FHitResult Hit(1.f);
 	FVector Adjusted = Velocity * deltaTime;
 	FVector VelPlaneDir = FVector::VectorPlaneProject(Velocity, SurfaceHit.Normal).GetSafeNormal();
@@ -124,6 +124,7 @@ bool UAwCharacterMovementComponent::FSavedMove_AwCharacter::CanCombineWith(const
 {
 	// Check currentMove and NewMove  & checks can we combine these two moves
 	FSavedMove_AwCharacter* NewMoveCasted = static_cast<FSavedMove_AwCharacter*>(NewMove.Get());
+	checkf(NewMoveCasted, TEXT("NewMove is not FSavedMove_AwCharacter"));
 	if (bSaved_WantsToSprint != NewMoveCasted->bSaved_WantsToSprint || bSaved_WantsToClimb != NewMoveCasted->
 		bSaved_WantsToClimb)
 	{
@@ -215,88 +216,145 @@ TArray<FHitResult> UAwCharacterMovementComponent::DoCapsuleTraceMultiByObject(
 	                                                  false, TArray<AActor*>(),
 	                                                  ShowDebugTrace
 		                                                  ? EDrawDebugTrace::ForOneFrame
-		                                                  : EDrawDebugTrace::None, CapsuleTraceResults, false);
+		                                                  : EDrawDebugTrace::None, CapsuleTraceResults, true);
 	return std::move(CapsuleTraceResults);
 }
 
 void UAwCharacterMovementComponent::EnterClimb()
 {
-	Velocity = FVector::ZeroVector;
-
-	FHitResult Hit;
-	GetWorld()->LineTraceSingleByChannel(Hit, UpdatedComponent->GetComponentLocation(),
-	                                     UpdatedComponent->GetComponentLocation() + UpdatedComponent->GetForwardVector()
-	                                     * 100,
-	                                     ECC_WorldStatic, AwCharacterOwner->GetIgnoreCollisionParams());
-	FQuat NewRotation = FRotationMatrix::MakeFromX(-Hit.Normal).ToQuat();
-	SafeMoveUpdatedComponent(FVector::ZeroVector, NewRotation, false, Hit);
-
-	bOrientRotationToMovement = false;
-	AwCharacterOwner->GetMesh()->SetRelativeLocation(FVector(-20, 0, -120));
-	AwCharacterOwner->GetCapsuleComponent()->SetCapsuleHalfHeight(60);
-
 	SetMovementMode(MOVE_Custom, ECustomMovementMode::Move_Climbing);
 }
 
 void UAwCharacterMovementComponent::ExitClimb()
 {
+	bSafe_WantsToClimb = false; // Reset the flag
+	SetMovementMode(MOVE_Falling);
+}
+
+bool UAwCharacterMovementComponent::CheckHasReachTheFloor()
+{
+	const FVector DownVec = -UpdatedComponent->GetUpVector();
+	const FVector StartOffset = DownVec * 25 + UpdatedComponent->GetForwardVector() * -10;
+
+	const FVector Start = UpdatedComponent->GetComponentLocation() + StartOffset;
+	const FVector End = Start + DownVec;
+	TArray<FHitResult> Hits;
+	UKismetSystemLibrary::CapsuleTraceMultiForObjects(this, Start, End,
+	                                                  20, 60,
+	                                                  ClimbSurTypes,
+	                                                  false, TArray<AActor*>(),
+	                                                  EDrawDebugTrace::ForOneFrame, Hits, true);
+	if (Hits.Num() == 0)
+		return false;
+	for (const auto& Result : Hits)
+	{
+		auto Degrees = FMath::RadiansToDegrees(FMath::Acos(FVector::DotProduct(Result.ImpactNormal, -DownVec)));
+		Debug::Print("Up: " + (-DownVec).ToString(), FColor::White, -1);
+		Debug::Print("Angle: " + FString::SanitizeFloat(Degrees), FColor::White, -1);
+		if (Degrees <= 30.f || (Degrees >= 55 && Degrees <= 61))
+			return true;
+	}
+	return false;
+}
+
+bool UAwCharacterMovementComponent::CanClimbDownLedge() const
+{
+	if (!IsMovingOnGround()) return false;
+	const FVector DownVec = -UpdatedComponent->GetUpVector();
+	const FVector StartOffset = UpdatedComponent->GetForwardVector() * ClimbDownWalkableSurTraceOffset;
+	const FVector Start = UpdatedComponent->GetComponentLocation() + StartOffset;
+	const FVector End = Start + DownVec * 150;
+
+	FHitResult WalkableSurResult = DoLineTraceByObject(Start, End, true);
+
+	const FVector LedgeTraceStart = WalkableSurResult.TraceStart + UpdatedComponent->GetForwardVector() *
+		ClimbDownLedgeTraceOffset;
+	const FVector LedgeTraceEnd = LedgeTraceStart + DownVec * 300;
+
+	FHitResult LedgeResult = DoLineTraceByObject(LedgeTraceStart, LedgeTraceEnd, true);
+
+	if (WalkableSurResult.IsValidBlockingHit() && !LedgeResult.IsValidBlockingHit())
+	{
+		return true;
+	}
+	return false;
+}
+
+bool UAwCharacterMovementComponent::CanStartClimb() const
+{
+	if (TraceClimbaleSurface())
+	{
+		if (IsFalling())
+		{
+			FVector Start = UpdatedComponent->GetComponentLocation();
+			FVector End = Start + UpdatedComponent->GetForwardVector() * 50;
+			auto HitResult = DoLineTraceByObject(Start, End, true);
+			if (HitResult.IsValidBlockingHit())
+				return true;
+			return false;
+		}
+		else if (IsMovingOnGround())
+		{
+			return true;
+		}
+	}
+
+	return false;
 }
 
 void UAwCharacterMovementComponent::PhysClimb(float deltaTime, int32 Iterations)
 {
 	if (deltaTime < MIN_TICK_TIME)
-		return;
-
-	if (!AwCharacterOwner || (!AwCharacterOwner->Controller && !bRunPhysicsWithNoController && !HasAnimRootMotion() && !
-		CurrentRootMotion.HasOverrideVelocity()))
 	{
-		Velocity = FVector::ZeroVector;
-		Acceleration = FVector::ZeroVector;
 		return;
 	}
 
-	FHitResult SurHit;
-	const FVector ActorLocation = UpdatedComponent->GetComponentLocation();
-	const FVector ActorForwardVector = UpdatedComponent->GetForwardVector();
-
-	bool bHit = GetWorld()->LineTraceSingleByObjectType(SurHit, ActorLocation,
-	                                                    ActorLocation + ActorForwardVector * ClimbReachDistance,
-	                                                    ECC_WorldStatic,
-	                                                    AwCharacterOwner->GetIgnoreCollisionParams()); // 忽略当前角色自身，
-	if (!bHit)
+	// TODO: Process all the climbable surface 
+	TraceClimbableSurfaceTick(ClimbSurfaceTraceResults);
+	ProcessClimbaleSurfaceInfo(CurrentClimbSurfaceLocation, CurrentClimbSurfaceNormal);
+	// TODO: Check if we should stop climb
+	if (ClimbSurfaceTraceResults.Num() == 0 || CheckHasReachTheFloor())
 	{
-		ExitClimb();
-		StartNewPhysics(deltaTime, Iterations);
+		bSafe_WantsToClimb = false;
 		return;
 	}
-	// perform movement
+
+	RestorePreAdditiveRootMotionVelocity();
+
+	if (!HasAnimRootMotion() && !CurrentRootMotion.HasOverrideVelocity())
+	{
+		CalcVelocity(deltaTime, 0.f, true, GetMaxBrakingDeceleration());
+	}
+
+	ApplyRootMotionToVelocity(deltaTime);
+
 	Iterations++;
 	bJustTeleported = false;
 
-	// Transform Acceleration
-	Acceleration.Z = 0;
-	Acceleration = Acceleration.RotateAngleAxis(90.f, -UpdatedComponent->GetRightVector());
+	FHitResult SurHit(1.f);
+	const FVector ActorLocation = UpdatedComponent->GetComponentLocation();
+	const FVector Adjusted = Velocity * deltaTime;
+	// Handle climb rotation
+	FQuat NewRotationQuat = GetClimbRotation(deltaTime);
+	SafeMoveUpdatedComponent(Adjusted, NewRotationQuat, true, SurHit);
 
+	if (SurHit.Time < 1.f)
+	{
+		HandleImpact(SurHit, deltaTime, Adjusted);
+		SlideAlongSurface(Adjusted, 1.f - SurHit.Time, SurHit.Normal, SurHit, true);
+	}
+	if (!HasAnimRootMotion() && !CurrentRootMotion.HasOverrideVelocity())
+	{
+		Velocity = (UpdatedComponent->GetComponentLocation() - ActorLocation) / deltaTime;
+	}
 
-	// AddMovementInput
-	CalcVelocity(deltaTime, 0.f, false, GetMaxBrakingDeceleration());
-	Velocity = FVector::VectorPlaneProject(Velocity, SurHit.Normal).GetSafeNormal() * ClimbMaxSpeed;
-
-	const auto dx = deltaTime * Velocity;
-
-	FHitResult HitResult;
-	// const FRotator Rotation = FRotator(0, ClimbRotator.Yaw, 0);
-	// const FVector Direction = FRotationMatrix(ClimbRotator).GetScaledAxis(EAxis::Z);
-	// const FVector StartLocation = GetActorLocation() + FRotationMatrix(ClimbRotator).GetScaledAxis(EAxis::Z) * 100 *
-	// 	FVector::VectorPlaneProject(dx,SurHit.Normal).;
-	// const FVector EndLocation = StartLocation + FRotationMatrix(Rotation).GetScaledAxis(EAxis::X) * 100;
-	//
-	// bool bHit = UKismetSystemLibrary::CapsuleTraceSingle(GetWorld(), StartLocation, EndLocation,
-	// 													 10, 35, UEngineTypes::ConvertToTraceType(ECC_WorldStatic),
-	// 													 false,
-	// 													 TArray<AActor*>({this}), EDrawDebugTrace::ForOneFrame,
-	// 													 HitResult,
-	// 													 true);
+	// Snap movement to surface
+	const FVector Projected = (CurrentClimbSurfaceLocation - UpdatedComponent->GetComponentLocation()).ProjectOnTo(
+		UpdatedComponent->GetForwardVector());
+	const FVector Snap = Projected.Length() * -CurrentClimbSurfaceNormal;
+	UpdatedComponent->MoveComponent(Snap * deltaTime * 3,
+	                                UpdatedComponent->GetComponentQuat(),
+	                                true);
 }
 
 bool UAwCharacterMovementComponent::TraceClimbaleSurface() const
@@ -325,19 +383,21 @@ bool UAwCharacterMovementComponent::TraceClimbaleSurface() const
 	EndLocation = Hit_location - Hit_normal * 200;
 
 	// 计算 法向量 和角色朝向夹角
-	const float Angle = FMath::Acos(FVector::DotProduct(Hit_normal, -1 * ForWardVector));
-	if (abs(Angle) > 30.f)
+	const float Angle = FMath::Acos(FVector::DotProduct(Hit_normal.ProjectOnTo(-1 * ForWardVector), -1 * ForWardVector))
+		* 180 / PI;
+	if (abs(Angle) > 35.f)
 		return false;
 
 	const float Dis_thred = ClimbReachDistance * 0.5;
 	FVector Hit_location_pre = Hit_location;
 	FVector ZOffest = FVector(0, 0, 25);
+	float ZDelta = 0.f;
 
-	while (bHit && Hit_location.Z < AwCharacterOwner->BaseEyeHeight + ClimbDectHeight)
+	while (bHit && ZDelta < AwCharacterOwner->BaseEyeHeight + ClimbDectHeight)
 	{
 		GetWorld()->SweepSingleByObjectType(HitResult, StartLocation, EndLocation, FQuat::Identity,
-		                                           ECC_WorldStatic,
-		                                           CollisionBox, AwCharacterOwner->GetIgnoreCollisionParams());
+		                                    ECC_WorldStatic,
+		                                    CollisionBox, AwCharacterOwner->GetIgnoreCollisionParams());
 		if (!HitResult.IsValidBlockingHit())
 			break;
 
@@ -352,11 +412,12 @@ bool UAwCharacterMovementComponent::TraceClimbaleSurface() const
 		DrawDebugBox(GetWorld(), HitResult.ImpactPoint, BoxExtend, FQuat::Identity, FColor::Red, false, 1.f);
 
 		Hit_location_pre = Hit_location;
+		ZDelta += ZOffest.Z;
 		StartLocation += ZOffest;
 		EndLocation += ZOffest;
 	}
 
-	if (Hit_location.Z > AwCharacterOwner->BaseEyeHeight + 50.)
+	if (ZDelta > AwCharacterOwner->BaseEyeHeight + ClimbDectHeight / 2)
 	{
 		// GEngine->AddOnScreenDebugMessage(-1, 0.f, FColor::White, Hit_normal.ToString());
 		DrawDebugBox(GetWorld(), Hit_location, BoxExtend, FQuat::Identity, FColor::Green, false, 2.f);
@@ -364,6 +425,78 @@ bool UAwCharacterMovementComponent::TraceClimbaleSurface() const
 	}
 
 	return false;
+}
+
+bool UAwCharacterMovementComponent::TraceClimbableSurfaceTick(TArray<FHitResult>& HitResults)
+{
+	const FVector StartOffset = 50.f * UpdatedComponent->GetForwardVector();
+	const FVector StartLocation = UpdatedComponent->GetComponentLocation() + StartOffset;
+	const FVector EndLocation = StartLocation + UpdatedComponent->GetForwardVector();
+	HitResults = DoCapsuleTraceMultiByObject(StartLocation, EndLocation, AwCharacterOwner->GetIgnoreCollisionParams(),
+	                                         true);
+	return !HitResults.IsEmpty();
+}
+
+void UAwCharacterMovementComponent::ProcessClimbaleSurfaceInfo(FVector& SurfaceLoca, FVector& SurfaceNormal)
+{
+	SurfaceLoca = FVector::ZeroVector;
+	SurfaceNormal = FVector::ZeroVector;
+	if (ClimbSurfaceTraceResults.Num() == 0)
+		return;
+	for (const auto& HitResult : ClimbSurfaceTraceResults)
+	{
+		SurfaceLoca += HitResult.ImpactPoint;
+		SurfaceNormal += HitResult.ImpactNormal;
+	}
+	SurfaceLoca /= ClimbSurfaceTraceResults.Num();
+	SurfaceNormal = SurfaceNormal.GetSafeNormal();
+	// Debug::Print("ClimbSurfaceLocation: " + CurrentClimbSurfaceLocation.ToString(),FColor::Cyan,-1);
+	// Debug::Print("ClimbSurfaceLNormal: " + CurrentClimbSurfaceNormal.ToString(),FColor::Cyan,-1);
+}
+
+FRotator UAwCharacterMovementComponent::FindClimbRotation(const FVector StartLoca, const FVector EndLoca,
+                                                          const FVector ObstacleNormalVec)
+{
+	FVector ClimbUpVec = EndLoca - StartLoca;
+	ClimbUpVec.Normalize(); // 单位向量
+	FVector ClimbRightVec = ObstacleNormalVec.Cross(ClimbUpVec); // ue 是左手系好像
+	ClimbRightVec.Normalize();
+	FVector Up = ClimbRightVec.Cross(ObstacleNormalVec);
+	Up.Normalize();
+
+	return FMatrix(-1 * ObstacleNormalVec, ClimbRightVec, Up, FVector::ZeroVector).Rotator();
+}
+
+FQuat UAwCharacterMovementComponent::GetClimbRotation(float DeltaTime)
+{
+	const FQuat CurrentQuat = UpdatedComponent->GetComponentQuat();
+	if (HasAnimRootMotion() || CurrentRootMotion.HasOverrideVelocity())
+	{
+		return CurrentQuat;
+	}
+
+	FVector OL_Norm = CurrentClimbSurfaceNormal;
+	FVector OL = CurrentClimbSurfaceLocation; // would be the start location of FindClimbRotation Call
+
+	const FVector UpperStartOffset = 50.f * UpdatedComponent->GetForwardVector() + 25.f * FVector::UpVector;
+	const FVector StartLocation = UpdatedComponent->GetComponentLocation() + UpperStartOffset;
+	const FVector EndLocation = StartLocation + UpdatedComponent->GetForwardVector();
+
+	ClimbSurfaceTraceResults = DoCapsuleTraceMultiByObject(StartLocation, EndLocation,
+	                                                       AwCharacterOwner->GetIgnoreCollisionParams(), true);
+	ProcessClimbaleSurfaceInfo(CurrentClimbSurfaceUpperLocation, CurrentClimbSurfaceUpperNormal);
+
+	FVector OLE = CurrentClimbSurfaceUpperLocation; // would be the end location of FindClimbRotation Call
+	FVector OLE_Norm = CurrentClimbSurfaceUpperNormal;
+
+	OL_Norm = FMath::VInterpTo(OL_Norm, OLE_Norm, DeltaTime, 5.f);
+	//
+	// DrawDebugPoint(GetWorld(), OLE, 10.f, FColor::Blue, false, 0.f);
+	// DrawDebugPoint(GetWorld(), OL, 10.f, FColor::Yellow, false, 0.f);
+
+	const FRotator NewRotator = FindClimbRotation(OL, OLE, OL_Norm);
+	const FQuat TargetQuat = NewRotator.Quaternion();
+	return FMath::QInterpTo(CurrentQuat, TargetQuat, DeltaTime, 5.f);
 }
 
 void UAwCharacterMovementComponent::UpdateFromCompressedFlags(uint8 Flags)
@@ -388,17 +521,17 @@ void UAwCharacterMovementComponent::UpdateCharacterStateBeforeMovement(float Del
 	{
 		ExitSlide();
 	}
-	else if (MovementMode == MOVE_Walking || IsFalling())
+	else if (MovementMode == MOVE_Walking || MovementMode == MOVE_Falling)
 	{
-		if(CanStartClimb())
+		if (bSafe_WantsToClimb)
 		{
-			// TODO:
-			Debug::Print("Check Can Start Climb");
+			// TODO: Enter Climb Mode
+			EnterClimb();
 		}
 	}
-	else if(IsCustomMoveMode(Move_Climbing))
+	else if (IsCustomMoveMode(Move_Climbing) && !bSafe_WantsToClimb)
 	{
-		
+		ExitClimb();
 	}
 
 	Super::UpdateCharacterStateBeforeMovement(DeltaSeconds);
@@ -428,11 +561,57 @@ void UAwCharacterMovementComponent::OnMovementUpdated(float DeltaSeconds, const 
 	{
 		SetWalkMaxSpeed();
 	}
-	else if (MovementMode == Move_Climbing)
+	else if (MovementMode == MOVE_Custom && CustomMovementMode == Move_Climbing)
 	{
 		MaxCustomMovementSpeed = GetMaxSpeed();
 	}
+	else if (MovementMode == MOVE_Falling)
+	{
+		if (!bSafe_WantsToClimb && CanStartClimb())
+			bSafe_WantsToClimb = true;
+	}
 	bSaved_PreWantsToCrouch = bWantsToCrouch;
+}
+
+void UAwCharacterMovementComponent::OnMovementModeChanged(EMovementMode PreviousMovementMode, uint8 PreviousCustomMode)
+{
+	if (IsClimbing())
+	{
+		StopMovementImmediately();
+		FVector StartLoca = UpdatedComponent->GetComponentLocation() + UpdatedComponent->GetUpVector() * 50;
+		TArray<FHitResult> Hits = DoCapsuleTraceMultiByObject(StartLoca,
+		                                                      StartLoca + UpdatedComponent->GetForwardVector() * 100,
+		                                                      AwCharacterOwner->GetIgnoreCollisionParams(),
+		                                                      false);
+		FVector HitNormal = FVector::ZeroVector;
+		FVector HitLocation = FVector::ZeroVector;
+		for (const auto& Hit : Hits)
+		{
+			HitNormal += Hit.ImpactNormal;
+			HitLocation += Hit.ImpactPoint;
+		}
+		HitNormal /= Hits.Num();
+		HitLocation /= Hits.Num();
+ 		FQuat NewRotation = FRotationMatrix::MakeFromX(-HitNormal).ToQuat();
+		UpdatedComponent->MoveComponent((HitLocation - UpdatedComponent->GetComponentLocation()).GetSafeNormal(),
+		                                NewRotation, false);
+		bOrientRotationToMovement = false;
+		AwCharacterOwner->GetMesh()->SetRelativeLocation(FVector(-20, 0, -120));
+		AwCharacterOwner->GetCapsuleComponent()->SetCapsuleHalfHeight(60);
+	}
+	if (PreviousMovementMode == MOVE_Custom && PreviousCustomMode == Move_Climbing)
+	{
+		// Exit Climbing
+
+		bOrientRotationToMovement = true;
+		AwCharacterOwner->GetMesh()->SetRelativeLocation(FVector(0, 0, -95));
+		AwCharacterOwner->GetCapsuleComponent()->SetCapsuleHalfHeight(90);
+		FHitResult Hit;
+		SafeMoveUpdatedComponent(UpdatedComponent->GetForwardVector() * -100,
+		                         FRotator(0, UpdatedComponent->GetComponentRotation().Yaw, 0).Quaternion(), true, Hit);
+		StopMovementImmediately();
+	}
+	Super::OnMovementModeChanged(PreviousMovementMode, PreviousCustomMode);
 }
 
 void UAwCharacterMovementComponent::PhysCustom(float deltaTime, int32 Iterations)
@@ -443,14 +622,14 @@ void UAwCharacterMovementComponent::PhysCustom(float deltaTime, int32 Iterations
 	{
 	case Move_Slide:
 		PhysSlide(deltaTime, Iterations);
-		break;
+		return;
 	case Move_Climbing:
 		PhysClimb(deltaTime, Iterations);
-		break;
+		return;
 	default:
 		UE_LOG(LogTemp, Fatal, TEXT("Unknown Custom Movement Mode"));
 		SetMovementMode(MOVE_None);
-		break;
+		return;
 	}
 }
 
@@ -479,6 +658,23 @@ void UAwCharacterMovementComponent::CrouchPressed()
 	bWantsToCrouch = !bWantsToCrouch;
 }
 
+void UAwCharacterMovementComponent::Climb()
+{
+	bSafe_WantsToClimb = true;
+}
+
+void UAwCharacterMovementComponent::EdgeClimb()
+{
+	FHitResult HitResult(1.f);
+	// TURN AROUND
+	UpdatedComponent->SetWorldRotation(FRotator(0, -UpdatedComponent->GetComponentRotation().Yaw, 0));
+}
+
+void UAwCharacterMovementComponent::StopClimb()
+{
+	bSafe_WantsToClimb = false;
+}
+
 bool UAwCharacterMovementComponent::IsCustomMoveMode(ECustomMovementMode CustomMode) const
 {
 	return MovementMode == MOVE_Custom && CustomMode == CustomMovementMode;
@@ -491,10 +687,23 @@ float UAwCharacterMovementComponent::GetMaxSpeed() const
 	if (MovementMode != MOVE_Custom)
 		return Super::GetMaxSpeed();
 
-	switch (MovementMode)
+	switch (CustomMovementMode)
 	{
 	case Move_Climbing:
 		return ClimbMaxSpeed;
+	default:
+		return 0.f;
+	}
+}
+
+float UAwCharacterMovementComponent::GetMaxAcceleration() const
+{
+	if (MovementMode != MOVE_Custom)
+		return Super::GetMaxAcceleration();
+	switch (CustomMovementMode)
+	{
+	case Move_Climbing:
+		return ClimbMaxAccleration;
 	default:
 		return 0.f;
 	}
@@ -504,7 +713,7 @@ float UAwCharacterMovementComponent::GetMaxBrakingDeceleration() const
 {
 	if (MovementMode != MOVE_Custom)
 		return Super::GetMaxBrakingDeceleration();
-	switch (MovementMode)
+	switch (CustomMovementMode)
 	{
 	case Move_Climbing:
 		return BrakingDecelerationClimbing;
@@ -525,12 +734,6 @@ void UAwCharacterMovementComponent::TickComponent(float DeltaTime, ELevelTick Ti
                                                   FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
-	// const FVector ForWardVector = UpdatedComponent->GetForwardVector();
-	// const FVector StartOffset = 50.f * ForWardVector;
-	// FVector StartLocation = UpdatedComponent->GetComponentLocation() + StartOffset;
-	// FVector EndLocation = StartLocation + ForWardVector;
-	// // DoCapsuleTraceMultiByObject(StartLocation,EndLocation,AwCharacterOwner->GetIgnoreCollisionParams(),true);
-	// TraceFromEyeHeight(100,-10);
 }
 
 FHitResult UAwCharacterMovementComponent::DoLineTraceByObject(const FVector& Start, const FVector& End,
@@ -554,25 +757,4 @@ FHitResult UAwCharacterMovementComponent::TraceFromEyeHeight(const float TraceDi
 	const FVector Start = CompLoca + EyeLoca + TraceStartOffset;
 	const FVector End = Start + UpdatedComponent->GetForwardVector() * TraceDis;
 	return DoLineTraceByObject(Start, End, true);
-}
-
-bool UAwCharacterMovementComponent::CanStartClimb() const
-{
-	if (TraceClimbaleSurface())
-	{
-		if (IsFalling())
-		{
-			FVector Start = UpdatedComponent->GetComponentLocation();
-			FVector End = Start + UpdatedComponent->GetForwardVector() * 75;
-			auto HitResult = DoLineTraceByObject(Start, End, true);
-			if (HitResult.IsValidBlockingHit())
-				return true;
-			return false;
-		}
-		else if (IsMovingOnGround())
-		{
-			return true;
-		}
-	}
-	return false;
 }

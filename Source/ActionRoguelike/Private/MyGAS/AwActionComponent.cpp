@@ -3,6 +3,9 @@
 
 #include "MyGAS/AwActionComponent.h"
 
+#include <string>
+
+#include "Debug/DebugHelper.h"
 #include "AwAction.h"
 #include "AWPlayerState.h"
 #include "AI/AWAICharacter.h"
@@ -23,21 +26,23 @@ void UAwActionComponent::ApplyInstanceEffects(UAwActionEffect* Effect, AActor* I
 {
 	if (!AttributeComp)
 		return;
+	
 	if (Effect->GetEffectMap().Num() > 0)
 	{
 		for (auto TPAIR : Effect->GetEffectMap())
 		{
 			FString NAME = TPAIR.Key;
 			const auto VALUE = TPAIR.Value;
+		
 			// PRINT ON THE SCREEN
 			if (VALUE == 0.f)
-				return;
+				continue;
 			if (NAME == "Health" && VALUE > 0.f)
 				if (AttributeComp->GetHealth() == AttributeComp->GetMaxHealth())
-					return;
+					continue;
 			if (NAME == "Mana" && VALUE > 0.f)
 				if (AttributeComp->GetMana() == AttributeComp->GetMaxMana())
-					return;
+					continue;
 			AttributeComp->SetAttributeBase(FName(*NAME), VALUE, Insigator);
 		}
 	}
@@ -55,14 +60,16 @@ void UAwActionComponent::ApplyInstanceEffects(UAwActionEffect* Effect, AActor* I
 void UAwActionComponent::ApplyPeriodicEffects(UAwActionEffect* Effect, AActor* Insigator,
                                               UAWAttributeComp* AttributeComp)
 {
-	GetWorld()->GetTimerManager().SetTimer(Effect->PeriodTimerHandle, [this,Effect,Insigator,AttributeComp ]()
+	FTimerHandle PeriodTimeHandle;
+	FTimerHandle DurationTimeHandle;
+	GetWorld()->GetTimerManager().SetTimer(PeriodTimeHandle, [this,Effect,Insigator,AttributeComp,&DurationTimeHandle,&PeriodTimeHandle]()
 	                                       {
 		                                       // If the attribute component is not valid, remove the effect
 		                                       if (!AttributeComp)
 		                                       {
 			                                       this->RemovePeriodicEffects(
-				                                       Effect, Insigator, AttributeComp, Effect->DurationTimerHandle,
-				                                       Effect->PeriodTimerHandle);
+				                                       Effect, Insigator, AttributeComp, DurationTimeHandle,
+				                                       PeriodTimeHandle);
 		                                       }
 
 		                                       this->ApplyInstanceEffects(Effect, Insigator, AttributeComp);
@@ -70,13 +77,13 @@ void UAwActionComponent::ApplyPeriodicEffects(UAwActionEffect* Effect, AActor* I
 	                                       , Effect->GetPeriod(), true);
 
 	EffectsGamePlayTags.AppendTags(Effect->GetBuffTags());
-	EffectObjectsPools.Add(Effect->GetEffectName(), FAwEffectRecorder(Insigator, AttributeComp, Effect));
+	EffectObjectsPools.Add(Effect->GetEffectName(), FAwEffectRecorder(Insigator, AttributeComp, Effect,PeriodTimeHandle));
 	if (Effect->GetDuration() > 0)
 	{
 		FTimerDelegate Delegate;
 		Delegate.BindUFunction(this, "RemovePeriodicEffects", Effect, Insigator, AttributeComp,
-		                       Effect->DurationTimerHandle,
-		                       Effect->PeriodTimerHandle);
+		                       DurationTimeHandle,
+		                       PeriodTimeHandle);
 		GetWorld()->GetTimerManager().SetTimer(Effect->DurationTimerHandle, Delegate, Effect->GetDuration(), false);
 	}
 }
@@ -116,19 +123,19 @@ void UAwActionComponent::ApplyDurationEffects(UAwActionEffect* Effect, AActor* I
 			FString NAME = TPAIR.Key;
 			const auto VALUE = TPAIR.Value;
 			// PRINT ON THE SCREEN
-			if (VALUE == 0.f)
-				return;
+			if (VALUE == 0.f || Effect->GetDuration() <= 0.f)
+				continue;
 			if (NAME == "Health" && VALUE > 0.f)
 				if (AttributeComp->GetHealth() == AttributeComp->GetMaxHealth())
-					return;
+					continue;
 			if (NAME == "Mana" && VALUE > 0.f)
 				if (AttributeComp->GetMana() == AttributeComp->GetMaxMana())
-					return;
+					continue;
 			AttributeComp->SetAttributeCurr(FName(*NAME), VALUE, Insigator);
 		}
 	}
 	EffectsGamePlayTags.AppendTags(Effect->GetBuffTags());
-	EffectObjectsPools.Add(Effect->GetEffectName(), FAwEffectRecorder(Insigator, AttributeComp, Effect));
+	EffectObjectsPools.Add(Effect->GetEffectName(), FAwEffectRecorder(Insigator, AttributeComp, Effect,Effect->DurationTimerHandle));
 	
 	if (Effect->GetDuration() > 0)
 	{

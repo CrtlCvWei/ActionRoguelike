@@ -323,6 +323,7 @@ class ACTIONROGUELIKE_API UAwActionEffect : public UObject
 	UPROPERTY(EditAnywhere, Category="Tags")
 	FName MyName;
 
+
 	
 public:
 
