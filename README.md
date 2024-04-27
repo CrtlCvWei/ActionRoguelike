@@ -1,7 +1,7 @@
 # ActionRoguelike
 
 ## Demo演示视频地址
-https://www.bilibili.com/video/BV1wC411H7Vo/vd_source=66f1808f20bda291a24908ad57633d0a
+https://www.bilibili.com/video/BV1wC411H7Vo/?spm_id_from=333.999.0.0&vd_source=66f1808f20bda291a24908ad57633d0a
 
 
 学习教程来自[Tom Looman](https://github.com/tomlooman)的ActionRogueLike 课程，游戏类型为第三人称动作射击。使用C++/蓝图。
