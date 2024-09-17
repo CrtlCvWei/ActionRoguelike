@@ -51,15 +51,15 @@ public:
 	AAwCharacter(const FObjectInitializer& ObjectInitializer);
 
 protected:
-	
+
+#pragma region component
 	UPROPERTY()
 	UArrowComponent* ArrowComp;
-	
-	
 	// Called when the game starts or when spawned
+	
 	virtual void BeginPlay() override;
-
 	//Represents a camera viewpoint and settings, such as projection type, field of view, and post-process overrides.
+	
 	UPROPERTY(VisibleAnywhere)
 	UCameraComponent* CameraComp;
 
@@ -69,6 +69,7 @@ protected:
 	UPROPERTY(VisibleAnywhere)
 	UAWInteractionComponent* InteractionComp;
 
+	// Custom Component
 	UPROPERTY(VisibleAnywhere)
 	UAwCharacterMovementComponent* AwCharacterMovementComp;
 
@@ -77,7 +78,7 @@ protected:
 	UPROPERTY(EditAnywhere,BlueprintReadOnly,Category="ClimbAndVault")
 	FName RightKneeSocketName;
 	
-
+#pragma endregion
 	
 	//Basic Actions
 	UFUNCTION()
@@ -115,9 +116,10 @@ protected:
 	FTimerHandle ProjectileSpawnHandle;//
 	
 	// trace detection
+public:
 	UPROPERTY(BlueprintAssignable)
 	FClimingUpSignature ClimbingUp;
-	
+protected:	
 	UPROPERTY(EditAnywhere,Category="ClimbAndVault")
 	UAnimMontage* ClimbStartMontage;
 
@@ -126,12 +128,7 @@ protected:
 	
 	UFUNCTION(BlueprintCallable)
 	void RidOffClimbingMode();
-	UFUNCTION()
-	void MoveForwardWhenClimbing(float Values);
-	UFUNCTION()
-	void MoveRightWhenClimbing(float Values);
-	UFUNCTION()
-	bool DetectAndClimbUp();
+	
 	UFUNCTION()
 	void EdgeClimbing();
 	

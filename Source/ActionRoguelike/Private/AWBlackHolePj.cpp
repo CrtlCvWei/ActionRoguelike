@@ -18,7 +18,6 @@ void AAWBlackHolePj::OnBeginOverlap_Implementation(UPrimitiveComponent* Overlapp
 		CollisionEnableType.AddObjectTypesToQuery(ECC_WorldDynamic);
 		CollisionEnableType.AddObjectTypesToQuery(ECC_Pawn);
 		CollisionEnableType.AddObjectTypesToQuery(ECC_PhysicsBody);
-		// UE_LOG(LogTemp, Warning, TEXT("OtherComp: %s, CollisionObjectType: %s"), *OtherComp->GetName(), UEnum::GetEnumName(static_cast<int32>(OtherComp->GetCollisionObjectType())).ToString() );
 		ECollisionChannel TChannel = OtherComp->GetCollisionObjectType();
 		
 		if (CollisionEnableType.IsValidObjectQuery(TChannel))
@@ -70,7 +69,6 @@ void AAWBlackHolePj::Init_Paramters()
 	RForce->Radius = this->AttractionRange;
 	RForce->ForceStrength = this->AttractionStrength;
 	RForce->AddCollisionChannelToAffect(ECC_Pawn);
-	this->damage = 0;
 }
 
 void AAWBlackHolePj::AwGamePlayEffectImpact(AActor* Effector)
@@ -89,7 +87,7 @@ void AAWBlackHolePj::AwGamePlayEffectImpact(AActor* Effector)
 		ActionComponent = Effector->FindComponentByClass<UAwActionComponent>();
 		Attribute = Effector->FindComponentByClass<UAWAttributeComp>();
 	}
-	if (ActionComponent)
+	if (ActionComponent && Attribute)
 	{
 		if(EffectContext->Get())
 			ActionComponent->ApplyEffect(*(EffectContext->Get()), Attribute);

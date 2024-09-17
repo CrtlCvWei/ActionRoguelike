@@ -2,7 +2,7 @@
 
 #include "MyGAS/AwActionEffect.h"
 #include "Blueprint/AwBlueprintFunctionLibrary.h"
-#include "AwAction.h"
+#include "MyGAS/AwAction.h"
 #include "MyGAS/AwActionComponent.h"
 
 void FAwGameplayEffectContext::GetOwnedGameplayTags(FGameplayTagContainer& ActorTagContainer,

@@ -24,53 +24,67 @@ void UAwAction_ProjecileAttack::StartAction_Implementation(AActor* Instigator)
 
 	if (this->ProjectileClass && AttackAni)
 	{
-		bIsRunning = true;
+		RepData.bIsRunning = true;
+		RepData.Instigator = Instigator;
 		// Cost Mana
 
-		// Attac Animation
 		AAwCharacter* Player = Cast<AAwCharacter>(Instigator);
 		if (Player->GetVelocity() == FVector::ZeroVector)
 		{
 			FVector CameraLocation;
 			FRotator CameraRotation;
+			if (!Player->GetController())
+				return;
 			Player->GetController()->GetPlayerViewPoint(CameraLocation, CameraRotation);
 			// Get the camera location and rotation
 			// Turn Player to the camera direction
 			if (!Player->GetIsClimbing())
 				Player->SetActorRotation(FRotator(0.f, CameraRotation.Yaw, 0.f));
 		}
-
+		// Attac Animation
 		PlayAttackAni(Player);
-		
-		FTimerHandle ProjectileSpawnHandle;
-		FTimerDelegate Delegate;
-		Delegate.BindUFunction(this, "StartActionTimeEnasped", Player);
-		if (ensure(GetWorld()))
+
+		if (GetWorld()->GetNetMode() < NM_Client)
 		{
-			GetWorld()->GetTimerManager().SetTimer(ProjectileSpawnHandle, Delegate, AttackAni->Notifies[0].GetTriggerTime(), false);
+			FTimerHandle ProjectileSpawnHandle;
+			FTimerDelegate Delegate;
+			Delegate.BindUFunction(this, "StartActionTimeEnasped", Player);
+			if (ensure(GetWorld()))
+			{
+				GetWorld()->GetTimerManager().SetTimer(ProjectileSpawnHandle, Delegate,
+				                                       AttackAni->Notifies[0].GetTriggerTime(), false);
+			}
+			//cost
+			auto Attr = UAwBlueprintFunctionLibrary::GetAwAttributeComponent(Instigator);
+			if (Attr)
+			{
+				Attr->SetAttributeBase("Mana", -ManaCost.GetCurrentValue(), Instigator);
+			}
 		}
 	}
 	else
 	{
-		FTimerHandle ProjectileSpawnHandle;
-		FTimerDelegate Delegate;
-		Delegate.BindUFunction(this, "StartActionTimeEnasped", Instigator);
-		if (ensure(GetWorld()))
+		if (GetWorld()->GetNetMode() < NM_Client)
 		{
-			if (AttackTimeDelay > 0.f)
-				GetWorld()->GetTimerManager().SetTimer(ProjectileSpawnHandle, Delegate, AttackTimeDelay, false);
-			else if (AttackTimeDelay == 0.f)
+			FTimerHandle ProjectileSpawnHandle;
+			FTimerDelegate Delegate;
+			Delegate.BindUFunction(this, "StartActionTimeEnasped", Instigator);
+			if (ensure(GetWorld()))
 			{
-				StartActionTimeEnasped(Instigator);
+				if (AttackTimeDelay > 0.f)
+					GetWorld()->GetTimerManager().SetTimer(ProjectileSpawnHandle, Delegate, AttackTimeDelay, false);
+				else if (AttackTimeDelay == 0.f)
+				{
+					StartActionTimeEnasped(Instigator);
+				}
+			}
+			//cost
+			auto Attr = UAwBlueprintFunctionLibrary::GetAwAttributeComponent(Instigator);
+			if (Attr)
+			{
+				Attr->SetAttributeBase("Mana", -ManaCost.GetCurrentValue(), Instigator);
 			}
 		}
-	}
-
-	//cost
-	auto Attr = UAwBlueprintFunctionLibrary::GetAwAttributeComponent(Instigator);
-	if (Attr)
-	{
-		Attr->SetAttributeBase("Mana", -ManaCost.GetCurrentValue(), Instigator);
 	}
 }
 
@@ -90,7 +104,7 @@ void UAwAction_ProjecileAttack::StartActionTimeEnasped(AActor* Instigator)
 		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 		SpawnParams.Instigator = Player;
 		// Spawn the projectile (Magic balls or any other things...)
-		Projectile =  GetWorld()->SpawnActor<AActor>(ProjectileClass, LocaTM, SpawnParams);
+		Projectile = GetWorld()->SpawnActor<AActor>(ProjectileClass, LocaTM, SpawnParams);
 		// 
 	}
 	else
@@ -102,14 +116,14 @@ void UAwAction_ProjecileAttack::StartActionTimeEnasped(AActor* Instigator)
 		SpawnParams.Instigator = nullptr;
 		Projectile = GetWorld()->SpawnActor<AActor>(ProjectileClass, LocaTM, SpawnParams);
 	}
-	// Set Effects
-	if(EffectsClass.Num() > 0)
+	// Set Effects only on the server
+	if (GetWorld()->IsServer() && EffectsClass.Num() > 0)
 	{
 		// TODO : TRY USE EFFECTS[0] FOR TEST
-		
-		FAwGameplayEffectContextHandle GamePlayEffect =  GetOwningComponent()->MakeEffectContex(Projectile,this);
+
 		auto ProjecileBase = Cast<AAWProjectileBase>(Projectile);
-		if(ProjecileBase)
+		FAwGameplayEffectContextHandle GamePlayEffect = GetOwningComponent()->MakeEffectContex(Projectile, this);
+		if (ProjecileBase)
 		{
 			ProjecileBase->SetEffectContext(GamePlayEffect);
 		}
@@ -125,8 +139,9 @@ FRotator UAwAction_ProjecileAttack::GetProjectileRotation(ACharacter* Instigator
 	FRotator CameraRotation;
 	FRotator ProjectileRotation;
 	float longest_dis = 10000.f;
-
-	Instigator->GetController()->GetPlayerViewPoint(CameraLocation, CameraRotation);
+	auto Controller = Instigator->GetController();
+	ensureAlways(Controller);
+	Controller->GetPlayerViewPoint(CameraLocation, CameraRotation);
 	EyeEndLocation = CameraLocation + longest_dis * CameraRotation.Vector();
 
 	// 创建射线参数
@@ -151,31 +166,22 @@ FRotator UAwAction_ProjecileAttack::GetProjectileRotation(ACharacter* Instigator
 bool UAwAction_ProjecileAttack::CheckActionAvailable(AActor* Instigator) const
 {
 	AAwCharacter* Player = Cast<AAwCharacter>(Instigator);
-	if(Player)
+	if (Player)
 	{
 		if (Player->GetIsClimbing() || Player->GetCharacterMovement()->IsFalling())
 		{
 			return false;
 		}
 	}
-	return  Super::CheckActionAvailable(Instigator);
+	return Super::CheckActionAvailable(Instigator);
 }
 
 void UAwAction_ProjecileAttack::StopAction_Implementation(AActor* Instigator)
 {
-	
 	Super::StopAction_Implementation(Instigator);
-
 }
 
 void UAwAction_ProjecileAttack::PlayAttackAni_Implementation(ACharacter* Player)
 {
 	Player->PlayAnimMontage(AttackAni, 1.);
-}
-
-void UAwAction_ProjecileAttack::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
-{
-	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-	DOREPLIFETIME(UAwAction_ProjecileAttack, ProjectileClass);
-	DOREPLIFETIME_CONDITION_NOTIFY(UAwAction_ProjecileAttack, AttackAni, COND_None, REPNOTIFY_Always);
 }

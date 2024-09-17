@@ -56,7 +56,7 @@ protected:
 	TObjectPtr<APlayerState> PlayerState;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="WidgetController")
-	TObjectPtr<UAWAttributeComp> AttributeComp;
+	TObjectPtr<UAWAttributeComp> AwAttributeComp;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="WidgetController")
 	TObjectPtr<UAwActionComponent> AbilitySystemComp;

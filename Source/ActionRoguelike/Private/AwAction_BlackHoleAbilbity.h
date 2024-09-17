@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "AwAction.h"
+#include "MyGAS/AwAction.h"
 #include "AwCharacter.h"
 #include "AWMagicProject.h"
 #include "AwAction_BlackHoleAbilbity.generated.h"

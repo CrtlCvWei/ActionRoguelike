@@ -22,8 +22,9 @@ public:
 
 protected:
 	
-	UPROPERTY(EditAnywhere,Blueprintable)
+	UPROPERTY(ReplicatedUsing=OnRep_Visble,Blueprintable,EditAnywhere)
 	bool visible;
+	
 	UPROPERTY(EditAnywhere,Blueprintable)
 	float SpawnTime;
 	FTimerHandle InvisibleTimerHandle;
@@ -33,18 +34,23 @@ protected:
 	UPROPERTY(VisibleAnywhere, Category="Componet")
 	UStaticMeshComponent* MeshComp;
 
+	UFUNCTION()
+	virtual void OnRep_Visble();
+	
 	UFUNCTION(BlueprintCallable)
 	void SetVisble(bool bNewState );
+	UFUNCTION(BlueprintCallable)
+	bool GetVisble() const { return visible; }
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
-	UFUNCTION(Blueprintable)
+	UFUNCTION(Server,Unreliable, BlueprintCallable)
 	void CoolDown();
-	UFUNCTION(Blueprintable)
+	UFUNCTION(Server,Unreliable,BlueprintCallable)
 	void ShowUp();
 	
 	UFUNCTION()
 	virtual void Interact_Implementation(APawn* InstigorPawn) override;
-	
 
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 };

@@ -58,7 +58,8 @@ void UAwAction_AIRangedAttack::StartAction_Implementation(AActor* Instigator)
 	Super::StartAction_Implementation(Instigator);
 	if (this->ProjectileClass)
 	{
-		bIsRunning = true;
+		RepData.bIsRunning = true;
+		RepData.Instigator = Instigator;
 		// Attac Animation
 		FTimerHandle ProjectileSpawnHandle;
 		FTimerDelegate Delegate;

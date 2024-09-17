@@ -2,8 +2,8 @@
 
 
 #include "AWItemChest.h"
-
 #include "AWPlayerState.h"
+#include "Net/UnrealNetwork.h"
 
 void AAWItemChest::Init_Paramters()
 {
@@ -19,6 +19,7 @@ void AAWItemChest::Init_Paramters()
 	this->TargetPitch = 110.f;
 	this->bLock = false;
 	this->bUsed = false;
+	this->LidOpened = false;
 }
 
 void AAWItemChest::InvisTips()
@@ -34,8 +35,9 @@ AAWItemChest::AAWItemChest()
 {
  	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
+	SetReplicates(true);
 	Init_Paramters();
-
+	
 }
 
 void AAWItemChest::Unlock()
@@ -43,26 +45,33 @@ void AAWItemChest::Unlock()
 	this->bLock = false;
 }
 
+void AAWItemChest::CallTips_Implementation()
+{
+	if(!TipsWidget)
+	{
+		// TipsWidget = UAwWorldTipsWidget::CreateCustomWidget(this, FVector(0, 0, 100));
+		TipsWidget = CreateWidget<UAwWorldTipsWidget>(GetWorld(), TipsWidgetClass);
+		TipsWidget->SetAttachActor(this);
+		TipsWidget->SetOffset(FVector(0, 0, 100));
+		TipsWidget->SetText(FText::FromString("This chest is locked"));
+	}
+	TipsWidget->SetVisibility(ESlateVisibility::Visible);
+	TipsWidget->AddToViewport();
+	// 5s后隐藏
+	FTimerHandle UIManager;
+	GetWorld()->GetTimerManager().SetTimer(UIManager, this, &AAWItemChest::InvisTips, 5.f, false);
+}
+
 void AAWItemChest::Interact_Implementation(APawn* InstigorPawn)
 {
 	if (bLock)
 	{
 		//
-		if(!TipsWidget)
-		{
-			// TipsWidget = UAwWorldTipsWidget::CreateCustomWidget(this, FVector(0, 0, 100));
-			TipsWidget = CreateWidget<UAwWorldTipsWidget>(GetWorld(), TipsWidgetClass);
-			TipsWidget->SetAttachActor(this);
-			TipsWidget->SetOffset(FVector(0, 0, 100));
-			TipsWidget->SetText(FText::FromString("This chest is locked"));
-		}
-		TipsWidget->SetVisibility(ESlateVisibility::Visible);
-		TipsWidget->AddToViewport();
-		// 5s后隐藏
-		FTimerHandle UIManager;
-		GetWorld()->GetTimerManager().SetTimer(UIManager, this, &AAWItemChest::InvisTips, 5.f, false);
+		CallTips();
 		return;
 	}
+	LidOpened = !LidOpened;
+	// OnRep_LidOpened();
 	if(!bUsed)
 	{
 		bUsed = true;
@@ -88,6 +97,14 @@ void AAWItemChest::Tick(float DeltaTime)
 
 }
 
-// Called to bind functionality to input
+#pragma region replicated
+void AAWItemChest::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	DOREPLIFETIME(AAWItemChest, bLock);
+	DOREPLIFETIME(AAWItemChest, bUsed);
+	DOREPLIFETIME(AAWItemChest, LidOpened);
+}
+#pragma endregion
 
 

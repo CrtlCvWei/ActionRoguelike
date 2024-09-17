@@ -44,9 +44,7 @@ public:
 	virtual void  StartAction_Implementation(AActor* Instigator) override;
 	virtual void StopAction_Implementation(AActor* Instigator) override;
 
-	UFUNCTION(NetMulticast,Reliable)
+	UFUNCTION(NetMulticast,Unreliable,BlueprintCallable)
 	void PlayAttackAni(ACharacter* Player);
-	
-	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 };

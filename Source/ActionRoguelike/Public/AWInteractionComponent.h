@@ -7,6 +7,8 @@
 #include "AWInteractionComponent.generated.h"
 
 
+class UAwWorldUserWidget;
+
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class ACTIONROGUELIKE_API UAWInteractionComponent : public UActorComponent
 {
@@ -22,8 +24,28 @@ public:
 
 protected:
 
-	UPROPERTY(EditAnywhere);
+	UFUNCTION(Server,Unreliable)
+	void ServeInteract(AActor* InFocs);
+
+	void FindBestInteractable();
+	
+	UPROPERTY()
+	TObjectPtr<AActor> FocusedActor;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Trace")
+	float TraceRadius = 30.f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Trace")
+	TEnumAsByte<ECollisionChannel> CollisionChannel;
+	
+	UPROPERTY(EditAnywhere,Category = "Trace");
 	float InteractionDistance = 1000.f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "UI")
+	TSubclassOf<UAwWorldUserWidget> DefaultWidgetClass;
+
+	UPROPERTY()
+	TObjectPtr<UAwWorldUserWidget> DefaultWidgetInstance;
 	
 	// Called when the game starts
 	virtual void BeginPlay() override;

@@ -40,6 +40,8 @@ AAWExplosiveBarrel::AAWExplosiveBarrel()
 void AAWExplosiveBarrel::WhenActorsHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp,
                                        FVector NormalImpluse, const FHitResult& Hit)
 {
+	if(!HasAuthority())
+		return;
 	/* 被碰撞组件HitComp、碰撞组件OtherComp */
 	FName CollisionProfile = OtherComp->GetCollisionProfileName();
 

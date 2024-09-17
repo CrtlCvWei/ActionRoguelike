@@ -39,21 +39,22 @@ protected:
 
 
 	UFUNCTION()
-	void HealthBaseChangeForUI(float NewVal, float OldVal) const;
+	// void HealthBaseChangeForUI(float NewVal, float OldVal) const;
+	void HealthBaseChangeForUI(AActor* InstigatorActor, UAWAttributeComp* AttributeComp, float NewVal, float Change);
 	UFUNCTION()
-	void HealthCurrChangeForUI(float NewVal, float OldVal) const;
+	void HealthCurrChangeForUI(AActor* InstigatorActor, UAWAttributeComp* AttributeComp, float NewVal, float Change);
 	UFUNCTION()
-	void MaxHealthBaseChangeForUI(float NewVal, float OldVal) const;
+	void MaxHealthBaseChangeForUI(AActor* InstigatorActor, UAWAttributeComp* AttributeComp, float NewVal, float Change);
 	UFUNCTION()
-	void MaxHealthCurrChangeForUI(float NewVal, float OldVal) const;
+	void MaxHealthCurrChangeForUI(AActor* InstigatorActor, UAWAttributeComp* AttributeComp, float NewVal, float Change) ;
 	UFUNCTION()
-	void ManaBaseChangeForUI(float NewVal, float OldVal) const;
+	void ManaBaseChangeForUI(AActor* InstigatorActor, UAWAttributeComp* AttributeComp, float NewVal, float Change) ;
 	UFUNCTION()
-	void ManaCurrChangeForUI(float NewVal, float OldVal) const;
+	void ManaCurrChangeForUI(AActor* InstigatorActor, UAWAttributeComp* AttributeComp, float NewVal, float Change) ;
 	UFUNCTION()
-	void MaxManaBaseChangeForUI(float NewVal, float OldVal) const;
+	void MaxManaBaseChangeForUI(AActor* InstigatorActor, UAWAttributeComp* AttributeComp, float NewVal, float Change);
 	UFUNCTION()
-	void MaxManaCurrChangeForUI(float NewVal, float OldVal) const;
+	void MaxManaCurrChangeForUI(AActor* InstigatorActor, UAWAttributeComp* AttributeComp, float NewVal, float Change);
 
 public:
 	virtual void BindCallBacksToDependencies() override;

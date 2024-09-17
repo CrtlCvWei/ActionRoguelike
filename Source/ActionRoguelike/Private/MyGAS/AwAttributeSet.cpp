@@ -4,7 +4,11 @@
 #include "MyGAS/AwAttributeSet.h"
 // #include "AbilitySystemComponent.h"
 #include "AWPlayerState.h"
-#include "Net/UnrealNetwork.h"
+#include "GameplayEffectAggregator.h"
+#include "Debug/DebugHelper.h"
+
+
+
 
 /**/
 const FAwAttributeData FAwAttributeData::ERROR = FAwAttributeData(std::numeric_limits<float>::lowest());
@@ -48,7 +52,14 @@ void UAwAttributeSet::CreateAttributeDataChangeDelegates()
 	}
 }
 
-void UAwAttributeSet::AttributeDataChangeDelegate(FName Name, float NewValue, float OldValue, AttributeChangedType Type)
+void UAwAttributeSet::AttributeDataChangeDelegate(FName Name, float NewValue, float OldValue,
+	AttributeChangedType Type)
+{
+	MultiCastAttributeDataChangeDelegate(Name, NewValue, OldValue, Type);
+}
+
+void UAwAttributeSet::MultiCastAttributeDataChangeDelegate_Implementation(FName Name, float NewValue, float OldValue,
+	AttributeChangedType Type)
 {
 	if(Type == Current && AttributeCurrValueChangeDelegates.Contains(Name))
 		AttributeCurrValueChangeDelegates[Name].Broadcast(NewValue, OldValue);
@@ -59,6 +70,7 @@ void UAwAttributeSet::AttributeDataChangeDelegate(FName Name, float NewValue, fl
 UAwAttributeSet::UAwAttributeSet()
 {
 	OwningActor = nullptr;
+
 	InitFun();
 }
 
@@ -73,21 +85,14 @@ void UAwAttributeSet::InitFun()
 	InitAttack(0);
 }
 
-void UAwAttributeSet::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+void UAwAttributeSet::OnRep_Health()
 {
-	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-
-	// DOREPLIFETIME_CONDITION_NOTIFY(UAwAttributeSet, Health, COND_None, REPNOTIFY_Always);
-	// DOREPLIFETIME_CONDITION_NOTIFY(UAwAttributeSet, Mana, COND_None, REPNOTIFY_Always);
-	DOREPLIFETIME_CONDITION_NOTIFY(UAwAttributeSet, ReplicaAttributesArray, COND_None, REPNOTIFY_Always);
-}
-
-void UAwAttributeSet::OnRep_Health(const FAwAttributeData& OldHealth)
-{
+	Debug::Print("On Rep Health",FColor::Red,-1);
 }
 
 void UAwAttributeSet::OnRep_Mana(const FAwAttributeData& OldMana)
 {
+	Debug::Print("On Rep Mana",FColor::Red,-1);
 }
 
 void UAwAttributeSet::OnRep_OtherAttributes()
@@ -185,4 +190,11 @@ void AttributeDataChangeBroadcast(UAwAttributeSet* AttributeSet, FName Attribute
 	AttributeChangedType Type)
 {
 	AttributeSet->AttributeDataChangeDelegate(AttributeName, NewValue, OldValue, Type);
+}
+
+void UAwAttributeSet::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	DOREPLIFETIME(UAwAttributeSet,OwningActor);
+	DOREPLIFETIME(UAwAttributeSet,Health);
 }

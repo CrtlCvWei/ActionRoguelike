@@ -2,13 +2,10 @@
 
 
 #include "MyGAS/AwActionComponent.h"
-
-#include <string>
-
 #include "Debug/DebugHelper.h"
-#include "AwAction.h"
+#include "MyGAS/AwAction.h"
 #include "AWPlayerState.h"
-#include "AI/AWAICharacter.h"
+#include "Engine/ActorChannel.h"
 #include "UI/AwSkillWidget.h"
 
 // Sets default values for this component's properties
@@ -16,8 +13,57 @@ UAwActionComponent::UAwActionComponent()
 {
 	// Set this component to be initialized when the game starts, and to be ticked every frame.  You can turn these features
 	// off to improve performance if you don't need them.
-	PrimaryComponentTick.bCanEverTick = false;
-	// ...
+	PrimaryComponentTick.bCanEverTick = true;
+	SetIsReplicatedByDefault(true);
+}
+
+void UAwActionComponent::AddAction_Implementation(TSubclassOf<UAwAction> ActionClass)
+{
+	if (!ensure(ActionClass))
+	{
+		Debug::Print("The ActionClass is not exists", FColor::Cyan);
+		return;
+	}
+	// Skip for clients
+	if (!GetOwningActor()->HasAuthority())
+	{
+		Debug::Print("Client attempting to AddAction. [Class: {Class}]", FColor::Cyan);
+		return;
+	}
+
+	UAwAction* Action = NewObject<UAwAction>(this, ActionClass);
+	Action->CreateEffectInstances();
+	if (ensureAlways(Action))
+	{
+		if (Actions.Contains(Action) || Actions.Add(Action) >= 0)
+		{
+			if (Action->IsAuto())
+			{
+				if (!OwningActor)
+					SetOwningActor();
+				if (Action->CheckActionAvailable(OwningActor))
+					Action->StartAction(OwningActor);
+			}
+			return;
+		}
+	}
+	return;
+}
+
+void UAwActionComponent::RemoveAction_Implementation(UAwAction* ActionToRemove)
+{
+	if (ensure(ActionToRemove))
+	{
+		if (Actions.Num() == 0 || Actions.Find(ActionToRemove) == INDEX_NONE)
+		{
+			//
+			Debug::Print("The Action is not in the list", FColor::Cyan);
+			return;
+		}
+		Actions.Remove(ActionToRemove);
+		return;
+	}
+	return;
 }
 
 
@@ -26,14 +72,14 @@ void UAwActionComponent::ApplyInstanceEffects(UAwActionEffect* Effect, AActor* I
 {
 	if (!AttributeComp)
 		return;
-	
+
 	if (Effect->GetEffectMap().Num() > 0)
 	{
 		for (auto TPAIR : Effect->GetEffectMap())
 		{
 			FString NAME = TPAIR.Key;
 			const auto VALUE = TPAIR.Value;
-		
+
 			// PRINT ON THE SCREEN
 			if (VALUE == 0.f)
 				continue;
@@ -62,7 +108,8 @@ void UAwActionComponent::ApplyPeriodicEffects(UAwActionEffect* Effect, AActor* I
 {
 	FTimerHandle PeriodTimeHandle;
 	FTimerHandle DurationTimeHandle;
-	GetWorld()->GetTimerManager().SetTimer(PeriodTimeHandle, [this,Effect,Insigator,AttributeComp,&DurationTimeHandle,&PeriodTimeHandle]()
+	GetWorld()->GetTimerManager().SetTimer(PeriodTimeHandle,
+	                                       [this,Effect,Insigator,AttributeComp,&DurationTimeHandle,&PeriodTimeHandle]()
 	                                       {
 		                                       // If the attribute component is not valid, remove the effect
 		                                       if (!AttributeComp)
@@ -77,7 +124,8 @@ void UAwActionComponent::ApplyPeriodicEffects(UAwActionEffect* Effect, AActor* I
 	                                       , Effect->GetPeriod(), true);
 
 	EffectsGamePlayTags.AppendTags(Effect->GetBuffTags());
-	EffectObjectsPools.Add(Effect->GetEffectName(), FAwEffectRecorder(Insigator, AttributeComp, Effect,PeriodTimeHandle));
+	EffectObjectsPools.Add(Effect->GetEffectName(),
+	                       FAwEffectRecorder(Insigator, AttributeComp, Effect, PeriodTimeHandle));
 	if (Effect->GetDuration() > 0)
 	{
 		FTimerDelegate Delegate;
@@ -111,9 +159,8 @@ void UAwActionComponent::RemovePeriodicEffectsByForce(UAwActionEffect* Effect)
 }
 
 void UAwActionComponent::ApplyDurationEffects(UAwActionEffect* Effect, AActor* Insigator,
-	UAWAttributeComp* AttributeComp)
+                                              UAWAttributeComp* AttributeComp)
 {
-
 	if (!AttributeComp)
 		return;
 	if (Effect->GetEffectMap().Num() > 0)
@@ -135,20 +182,22 @@ void UAwActionComponent::ApplyDurationEffects(UAwActionEffect* Effect, AActor* I
 		}
 	}
 	EffectsGamePlayTags.AppendTags(Effect->GetBuffTags());
-	EffectObjectsPools.Add(Effect->GetEffectName(), FAwEffectRecorder(Insigator, AttributeComp, Effect,Effect->DurationTimerHandle));
-	
+	EffectObjectsPools.Add(Effect->GetEffectName(),
+	                       FAwEffectRecorder(Insigator, AttributeComp, Effect, Effect->DurationTimerHandle));
+
 	if (Effect->GetDuration() > 0)
 	{
 		FTimerDelegate Delegate;
 		Delegate.BindUFunction(this, "RemoveDurationEffects", Effect, Insigator, AttributeComp,
-							   Effect->DurationTimerHandle,
-							   Effect->PeriodTimerHandle);
+		                       Effect->DurationTimerHandle,
+		                       Effect->PeriodTimerHandle);
 		GetWorld()->GetTimerManager().SetTimer(Effect->DurationTimerHandle, Delegate, Effect->GetDuration(), false);
 	}
 }
 
 void UAwActionComponent::RemoveDurationEffects(UAwActionEffect* Effect, AActor* Insigator,
-	UAWAttributeComp* AttributeComp, FTimerHandle& DurationTimerHandle, FTimerHandle& PeriodTimerHandle)
+                                               UAWAttributeComp* AttributeComp, FTimerHandle& DurationTimerHandle,
+                                               FTimerHandle& PeriodTimerHandle)
 {
 	if (!AttributeComp)
 		return;
@@ -176,19 +225,41 @@ void UAwActionComponent::RemoveDurationEffects(UAwActionEffect* Effect, AActor* 
 	EffectObjectsPools.Remove(Effect->GetEffectName());
 }
 
+void UAwActionComponent::OnRep_Actions()
+{
+}
+
 // Called when the game starts
 void UAwActionComponent::BeginPlay()
 {
 	Super::BeginPlay();
+
+	SetOwningActor();
+	// Server Only
+}
+
+void UAwActionComponent::CheckActions() const
+{
+	for (auto Action : Actions)
+	{
+		if (Action)
+		{
+			Debug::Print(Action->GetActionName().ToString(), FColor::Cyan);
+		}
+	}
 }
 
 bool UAwActionComponent::SetOwningActor()
 {
 	ensure(GetOuter());
+	auto outer = GetOuter();
 	AAWPlayerState* OwningPlayerState = Cast<AAWPlayerState>(GetOuter());
 	if (OwningPlayerState)
 	{
-		OwningActor = OwningPlayerState->GetPawn();
+		AController* Controller = Cast<AController>(OwningPlayerState->GetOwner());
+		if (!Controller)
+			return false;
+		OwningActor = Controller->GetPawn();
 		if (OwningActor)
 			return true;
 		return false;
@@ -231,46 +302,6 @@ bool UAwActionComponent::BindCoolDownDelegate(FName ActionName, UAwUserWidget* W
 	return false;
 }
 
-bool UAwActionComponent::AddAction(TSubclassOf<UAwAction> ActionClass)
-{
-	if (!ensure(ActionClass))
-	{
-		return false;
-	}
-
-	UAwAction* Action = NewObject<UAwAction>(this, ActionClass);
-	Action->CreateEffectInstances();
-	if (ensure(Action))
-	{
-		if (Actions.Contains(Action) || Actions.Add(Action) >= 0)
-		{
-			if (Action->IsAuto())
-			{
-				if (!OwningActor)
-					SetOwningActor();
-				if (Action->CheckActionAvailable(OwningActor))
-					Action->StartAction(OwningActor);
-			}
-			return true;
-		}
-	}
-	return false;
-}
-
-bool UAwActionComponent::RemoveAction(UAwAction* ActionToRemove)
-{
-	if (ensure(ActionToRemove))
-	{
-		if (Actions.Num() == 0 || Actions.Find(ActionToRemove) == INDEX_NONE)
-		{
-			return false;
-		}
-		Actions.Remove(ActionToRemove);
-		return true;
-	}
-	return false;
-}
-
 bool UAwActionComponent::ApplyEffect(const FAwGameplayEffectContext& EffectContext, UAWAttributeComp* AttributeComp)
 {
 	UAwAction* Skill = EffectContext.GetAbility();
@@ -285,7 +316,7 @@ bool UAwActionComponent::ApplyEffect(const FAwGameplayEffectContext& EffectConte
 		// test
 
 		// GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Yellow, FString::Printf(TEXT("The Damage is  %f"), Effect_INSTANCE->GetEffectMapValue("Health")));	
-		
+
 		if (Effect_INSTANCE->GetType() == DurationPolicy::Instant)
 		{
 			// Apply the effect instantly
@@ -317,6 +348,8 @@ void UAwActionComponent::StartActionByName(AActor* Instigator, FName ActionName)
 		{
 			if (Action->CheckActionAvailable(Instigator))
 			{
+				if (!OwningActor->HasAuthority())
+					ServeStartActionByName(Instigator, ActionName);
 				Action->StartAction(Instigator);
 			}
 		}
@@ -334,6 +367,16 @@ void UAwActionComponent::StopActionByName(AActor* Instigator, FName ActionName)
 	}
 }
 
+void UAwActionComponent::ServeStartActionByName_Implementation(AActor* Instigator, FName ActionName)
+{
+	StartActionByName(Instigator, ActionName);
+}
+
+void UAwActionComponent::ServeStopActionByName_Implementation(AActor* Instigator, FName ActionName)
+{
+	StopActionByName(Instigator, ActionName);
+}
+
 UAwAction* UAwActionComponent::GetActionByName(FName ActionName)
 {
 	for (UAwAction* Action : Actions)
@@ -346,19 +389,39 @@ UAwAction* UAwActionComponent::GetActionByName(FName ActionName)
 	return nullptr;
 }
 
-
 // Called every frame
 void UAwActionComponent::TickComponent(float DeltaTime, ELevelTick TickType,
                                        FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
-	// Debug Code
-	// if (ActiveGameplayTags.Num() != 0)
-	// {
-	// 	FString DebugMsg = GetNameSafe(GetOwner()) + ": " + ActiveGameplayTags.ToStringSimple();
-	// 	FString DebugMsg2 = GetNameSafe(GetOwner()) + ": " + BlockGamePlayTags.ToStringSimple();
-	// 	GEngine->AddOnScreenDebugMessage(-1, 0.f, FColor::Black, DebugMsg);
-	// 	GEngine->AddOnScreenDebugMessage(-1, 0.f, FColor::White, DebugMsg2);
-	// }
+	for (auto Action : Actions)
+	{
+		if (Action == nullptr)
+			continue;
+		FColor TextColor = Action->IsRunning() ? FColor::Blue : FColor::White;
+		FString ActionMsg = FString::Printf(TEXT("[%s] Action: %s"), *GetNameSafe(GetOwner()), *GetNameSafe(Action));
+
+		Debug::Print(ActionMsg, TextColor, -1, this, 0.f);
+	}
+}
+
+bool UAwActionComponent::ReplicateSubobjects(class UActorChannel* Channel, class FOutBunch* Bunch, FReplicationFlags* RepFlags)
+{
+	bool WroteSomething = Super::ReplicateSubobjects(Channel, Bunch, RepFlags);
+	for (UAwAction* Action : Actions)
+	{
+		if (Action)
+		{
+			WroteSomething |= Channel->ReplicateSubobject(Action, *Bunch, *RepFlags);
+		}
+	}
+	return WroteSomething;
+}
+
+void UAwActionComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	DOREPLIFETIME(UAwActionComponent, Actions);
+	DOREPLIFETIME(UAwActionComponent, OwningActor);
 }

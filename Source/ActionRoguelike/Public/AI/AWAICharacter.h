@@ -26,7 +26,7 @@ protected:
 	void Init_Paramters();
 	
 	UPROPERTY(VisibleAnywhere,BlueprintReadOnly,Category="Components")
-	 TObjectPtr<UAWAttributeComp> AttributeComp;
+	 UAWAttributeComp* AttributeComp;
 
 	UPROPERTY(VisibleAnywhere,BlueprintReadOnly,Category="Components")
 	TObjectPtr<UAwActionComponent> ActionComp;
@@ -59,5 +59,5 @@ public:
 	virtual void PostInitializeComponents() override;
 	
 	UFUNCTION()
-	UAWAttributeComp* GetAttributeComp() const { return AttributeComp.Get(); }
+	UAWAttributeComp* GetAttributeComp() const { return AttributeComp; }
 };

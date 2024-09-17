@@ -25,13 +25,14 @@ void UAwAction_Sprint::StartAction_Implementation(AActor* Instigator)
 	{
 		auto AwMoveComp = Cast<UAwCharacterMovementComponent>(AwOwner->GetCharacterMovement());
 		AwMoveComp->Sprint();
-		bIsRunning = true;
+		RepData.bIsRunning = true;
+		RepData.Instigator = Instigator;
 	}
 }
 
 void UAwAction_Sprint::StopAction_Implementation(AActor* Instigator)
 {
-	if (bIsRunning)
+	if (RepData.bIsRunning)
 	{
 		Super::StopAction_Implementation(Instigator);
 		if (AAwCharacter* Owner = Cast<AAwCharacter>(GetTheOwner()))

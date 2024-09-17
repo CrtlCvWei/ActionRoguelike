@@ -7,7 +7,7 @@
 #include "Delegates/DelegateInstancesImpl.h"
 #include "Components/ActorComponent.h"
 #include "MyGAS/AwAttributeSet.h"
-#include "AWAttributeComp.generated.h"
+                        #include "AWAttributeComp.generated.h"
 
 UDELEGATE(BlueprintAuthorityOnly)
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_FourParams(FOnAttributeChangeSignture, AActor*, InstigatorActor, UAWAttributeComp*,
@@ -33,14 +33,17 @@ private:
 
 	// Sets default values for this component's properties
 
-	UPROPERTY(Replicated,EditDefaultsOnly, Blueprintable, Category="Attributes")
+	UPROPERTY(Replicated,VisibleAnywhere, Blueprintable, Category="Attributes")
 	TObjectPtr<UAwAttributeSet> AttributeSet;
+	
+	UPROPERTY()
+	TMap<FName, FOnAttributeChangeSignture> AllAttributeChangeMapBase;
 
 	UPROPERTY()
-	TMap<FName, FOnAttributeChangeSignture> AllAttributeChangeMap;
+	TMap<FName, FOnAttributeChangeSignture> AllAttributeChangeMapCurr;
 
 	UFUNCTION()
-	inline  FAwAttributeData GetAttributeData(const FName AttributeName) const;
+	FORCEINLINE  FAwAttributeData GetAttributeData(const FName AttributeName) const;
 	
 public:
 	UAWAttributeComp();
@@ -61,8 +64,6 @@ public:
 	UFUNCTION(BlueprintCallable)
 	float GetHealth() const
 	{
-		UE_LOG(LogTemp, Warning, TEXT("GetHealthBase: %f"),AttributeSet->GetHealthBase() );
-		UE_LOG(LogTemp, Warning, TEXT("GetHealthCurrent: %f"),AttributeSet->GetHealthCurrent() );
 		return AttributeSet->GetHealthBase() + AttributeSet->GetHealthCurrent();
 	}
 
@@ -95,43 +96,50 @@ public:
 	
 	UFUNCTION(BlueprintCallable)
 	UAwAttributeSet* GetAttributeSet() const { return AttributeSet; }
+	
+	
+	UFUNCTION(NetMulticast,Reliable,BlueprintCallable)
+	void AttributeChangeBoardCast(const FName Name, AActor* Instigator, float NewValue, float Change, bool bIsBase);
 
-	UPROPERTY(Replicated,BlueprintAssignable)
-	FOnAttributeChangeSignture OnHealthChange;
-	
-	UPROPERTY(Replicated,BlueprintAssignable)
-	FOnAttributeChangeSignture OnMaxHealthChange;
-	
-	UPROPERTY(Replicated,BlueprintAssignable)
-	FOnAttributeChangeSignture OnManaChange;
-	
-	UPROPERTY(Replicated,BlueprintAssignable)
-	FOnAttributeChangeSignture OnMaxManaChange;
-	
-	UFUNCTION(BlueprintCallable)
-	void AttributeChangeBoardCast(const FName Name, AActor* Instigator, float NewValue, float Change);
+	virtual void BeginPlay() override;
 
-
+	virtual bool ReplicateSubobjects(UActorChannel* Channel, FOutBunch* Bunch, FReplicationFlags* RepFlags) override;
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
-	
+#pragma region AttributeChangeBind
 	template <class UserClass>
 	UFUNCTION()
-	void AttributeChangeBind(const FString Name, UserClass* Object,void (UserClass::*Function)(AActor*,UAWAttributeComp*, float, float),FString&& FuncName)
+	void AttributeChangeBindBase(const FString Name, UserClass* Object,void (UserClass::*Function)(AActor*,UAWAttributeComp*, float, float),FString&& FuncName)
 	{
 		if( Name== FString() || !Function)
 			return;
 	    // AttributeChangeBind("Health", this, &AAWAICharacter::OnHealthChange,"&AAWAICharacter::OnHealthChange");
-		if (AllAttributeChangeMap.Contains(FName(*Name)))
+		if (AllAttributeChangeMapBase.Contains(FName(*Name)))
 		{
 			FName FunctionName = STATIC_FUNCTION_FNAME(*FuncName); // *FString is TCHAR
-			AllAttributeChangeMap[FName(*Name)].__Internal_AddUniqueDynamic(Object, Function,FunctionName);// Add the function to the delegate
-			//debug
-			// UE_LOG(LogTemp, Warning, TEXT("AttributeChangeBind: %s found in AllAttributeChangeMap"),*Name.ToString());
+			AllAttributeChangeMapBase[FName(*Name)].__Internal_AddUniqueDynamic(Object, Function,FunctionName);// Add the function to the delegate
 		}
 		else
 		{
 			UE_LOG(LogTemp, Warning, TEXT("AttributeChangeBind: %s not found in AllAttributeChangeMap"),*Name);
 		}
 	}
-		
+
+	template <class UserClass>
+	UFUNCTION()
+	void AttributeChangeBindCurr(const FString Name, UserClass* Object,void (UserClass::*Function)(AActor*,UAWAttributeComp*, float, float),FString&& FuncName)
+	{
+		if( Name== FString() || !Function)
+			return;
+		// AttributeChangeBind("Health", this, &AAWAICharacter::OnHealthChange,"&AAWAICharacter::OnHealthChange");
+		if (AllAttributeChangeMapCurr.Contains(FName(*Name)))
+		{
+			FName FunctionName = STATIC_FUNCTION_FNAME(*FuncName); // *FString is TCHAR
+			AllAttributeChangeMapCurr[FName(*Name)].__Internal_AddUniqueDynamic(Object, Function,FunctionName);// Add the function to the delegate
+		}
+		else
+		{
+			UE_LOG(LogTemp, Warning, TEXT("AttributeChangeBind: %s not found in AllAttributeChangeMap"),*Name);
+		}
+	}
+#pragma endregion
 };

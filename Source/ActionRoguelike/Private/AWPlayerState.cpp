@@ -3,6 +3,7 @@
 
 #include "AWPlayerState.h"
 
+#include "Debug/DebugHelper.h"
 #include "Net/UnrealNetwork.h"
 
 int32 AAWPlayerState::GetCredits() const
@@ -17,55 +18,55 @@ int32 AAWPlayerState::GetScores() const
 
 void AAWPlayerState::AddCredits(int32 v)
 {
-	if(!ensure(v > 0.f))
+	if (!ensure(v > 0.f))
 	{
 		return;
 	}
 	this->Credits += v;
 	// 0 is the Credits
-	StateChangeEvent.Broadcast(Cast<AAwCharacter>(GetOwner()),0,Credits,v);
+	StateChangeEvent.Broadcast(Cast<AAwCharacter>(GetOwner()), 0, Credits, v);
 }
 
 void AAWPlayerState::AddScores(int32 v)
 {
-	if(!ensure(v > 0.f))
+	if (!ensure(v > 0.f))
 	{
 		return;
 	}
- 	this->Scores += v;
+	this->Scores += v;
 	// 1 is the Scores
-	StateChangeEvent.Broadcast(Cast<AAwCharacter>(GetOwner()),1,Scores,v);
+	StateChangeEvent.Broadcast(Cast<AAwCharacter>(GetOwner()), 1, Scores, v);
 }
 
 bool AAWPlayerState::RemoveCredits(int32 v)
 {
-	if(!ensure(v < 0.f))
+	if (!ensure(v < 0.f))
 	{
-		return false; 
+		return false;
 	}
-	if(Credits < v)
+	if (Credits < v)
 	{
 		//not enough credits
 		return false;
 	}
-	Credits -= v ;
-	StateChangeEvent.Broadcast(Cast<AAwCharacter>(GetOwner()),0,Credits,v);
+	Credits -= v;
+	StateChangeEvent.Broadcast(Cast<AAwCharacter>(GetOwner()), 0, Credits, v);
 	return true;
 }
 
 bool AAWPlayerState::RemoveScores(int32 v)
 {
-	if(!ensure(v < 0.f))
+	if (!ensure(v < 0.f))
 	{
-		return false; 
+		return false;
 	}
-	if(Scores < v)
+	if (Scores < v)
 	{
 		//not enough credits
 		return false;
 	}
-	Scores -= v ;
-	StateChangeEvent.Broadcast(Cast<AAwCharacter>(GetOwner()),1,Scores,v);
+	Scores -= v;
+	StateChangeEvent.Broadcast(Cast<AAwCharacter>(GetOwner()), 1, Scores, v);
 	return true;
 }
 
@@ -84,17 +85,27 @@ void AAWPlayerState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLi
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
-	DOREPLIFETIME(AAWPlayerState,PlayerAttributeComp);
-	DOREPLIFETIME(AAWPlayerState,PlayerActionComp);
+	// DOREPLIFETIME(AAWPlayerState, PlayerActionComp);
+	// DOREPLIFETIME(AAWPlayerState, PlayerAttributeComp);
+}
+
+void AAWPlayerState::OnRep_ActionComp()
+{
+	Debug::Print("AAAAAAAA", FColor::Red, -1.f, nullptr, 5.f);
+}
+
+void AAWPlayerState::OnRep_AttributeComp()
+{
+	Debug::Print("VVVVVVV", FColor::Red, -1.f, nullptr, 5.f);
 }
 
 AAWPlayerState::AAWPlayerState()
 {
-	PlayerAttributeComp = CreateDefaultSubobject<UAWAttributeComp>(TEXT("PlayerAttributeComp"));
-	PlayerActionComp = CreateDefaultSubobject<UAwActionComponent>(TEXT("PlayerActionComp"));
-	bReplicates = true;
-	// PlayerActionComp->SetOwningActor();
-	// PlayerAttributeComp->GetAttributeSet()->SetOwningActor();
-	// PlayerAttributeComp->SetOwningActor();
-	//
+		PlayerAttributeComp = CreateDefaultSubobject<UAWAttributeComp>(TEXT("PlayerAttributeComp"));
+		PlayerActionComp = CreateDefaultSubobject<UAwActionComponent>(TEXT("PlayerActionComp"));
+		bReplicates = true;
+		PlayerActionComp->SetOwningActor();
+		PlayerAttributeComp->GetAttributeSet()->SetOwningActor();
+		PlayerAttributeComp->SetOwningActor();
+		//
 }

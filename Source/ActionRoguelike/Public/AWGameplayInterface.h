@@ -19,8 +19,6 @@ class UAWGameplayInterface : public UInterface
 class ACTIONROGUELIKE_API IAWGameplayInterface
 {
 	GENERATED_BODY()
-protected:
-	
 
 	// Add interface functions to this class. This is the class that will be inherited to implement this interface.
 public:

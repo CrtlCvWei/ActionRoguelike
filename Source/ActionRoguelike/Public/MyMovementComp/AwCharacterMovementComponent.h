@@ -13,13 +13,23 @@
  */
 
 UENUM(BlueprintType)
-enum ECustomMovementMode : int
+enum ECustomMovementMode : uint8
 {
 	Move_None UMETA(Hidden),
 	Move_Slide UMETA(DisplayName= "Slide"),
 	Move_Climbing UMETA(DisplayName= "Climb"),
 	Move_Max UMETA(Hidden)
 };
+
+UENUM(BlueprintType)
+enum class EMoveDirection : uint8
+{
+	None UMETA(Hidden),
+	X ,
+	Y,
+	Max UMETA(Hidden)
+};
+
 
 UCLASS()
 class ACTIONROGUELIKE_API UAwCharacterMovementComponent : public UCharacterMovementComponent
@@ -31,7 +41,7 @@ class ACTIONROGUELIKE_API UAwCharacterMovementComponent : public UCharacterMovem
 	public:
 		typedef FSavedMove_Character Super;
 		uint8 bSaved_WantsToSprint : 1;
-		uint8 bSaved_PreWantsToCrouch : 1;
+		uint8 bSaved_PreWantsToCrouch : 1; 
 		uint8 bSaved_WantsToClimb : 1;
 
 		virtual bool CanCombineWith(const FSavedMovePtr& NewMove, ACharacter* InCharacter, float MaxDelta) const override;
@@ -52,10 +62,13 @@ class ACTIONROGUELIKE_API UAwCharacterMovementComponent : public UCharacterMovem
 		virtual FSavedMovePtr AllocateNewMove() override;
 	};
 
+	UPROPERTY()
 	bool bSafe_WantsToSprint;
+	UPROPERTY()
 	bool bSafe_WantsToClimb;
+	UPROPERTY()
 	bool bSaved_PreWantsToCrouch;
-
+	
 	UPROPERTY(EditDefaultsOnly)
 	float Sprint_MaxWalkSpeed;
 
@@ -69,6 +82,8 @@ class ACTIONROGUELIKE_API UAwCharacterMovementComponent : public UCharacterMovem
 private:
 #pragma region SlidePhy
 
+	uint8 SlideRecFlag = 0x04;
+	
 	UPROPERTY(EditDefaultsOnly)
 	float SlideMinSpeed = 350.f;
 	UPROPERTY(EditDefaultsOnly)
@@ -83,15 +98,11 @@ private:
 	void EnterSlide();
 	void ExitSlide();
 	void PhysSlide(float deltaTime, int32 Iterations);
-	bool GetSlideSurface(FHitResult& HitResult) const;
+	// bool GetSlideSurface(FHitResult& HitResult) const;
 
 #pragma endregion
 
 #pragma region Climb
-
-	FHitResult DoLineTraceByObject(const FVector& Start, const FVector& End,bool ShowDebugTrace) const;
-	FHitResult TraceFromEyeHeight(const float TraceDis,const float TraceStartOffset = 0) const;
-	TArray<FHitResult> DoCapsuleTraceMultiByObject(const FVector& Start, const FVector& End,const FCollisionQueryParams& Params,bool ShowDebugTrace) const;
 
 #pragma region ClimbVariables
 
@@ -101,7 +112,6 @@ private:
 	FVector CurrentClimbSurfaceUpperLocation;
 	FVector CurrentClimbSurfaceUpperNormal;
 	FRotator CurrentClimbRotator;
-
 	
 	UPROPERTY(EditDefaultsOnly)
 	float ClimbCapsuleTraceRadius = 50.f;
@@ -122,18 +132,17 @@ private:
 	float ClimbingGravityScale = 0.f;
 	UPROPERTY(EditDefaultsOnly)
 	float BrakingDecelerationClimbing = 512.f;
+public:
 	UPROPERTY(EditDefaultsOnly)
-	float ClimbReachDistance = 150.f;
+	float ClimbReachDistance = 50.f;
 	UPROPERTY(EditDefaultsOnly)
 	float ClimbDectHeight = 100.f;
 #pragma endregion
-	
-public:
-	bool TraceClimbaleSurface() const;
+
 private:
 	bool TraceClimbableSurfaceTick(TArray<FHitResult>& HitResults);
-	void ProcessClimbaleSurfaceInfo(FVector& SurfaceLoca,FVector& SurfaceNormal);
-	static FRotator FindClimbRotation(const FVector StartLoca, const FVector EndLoca, const FVector ObstacleNormalVec);
+	void ProcessClimbableSurfaceInfo(FVector& SurfaceLoca,FVector& SurfaceNormal);
+	
 	FQuat GetClimbRotation(float DeltaTime);
 	void EnterClimb();
 	void ExitClimb();
@@ -146,11 +155,16 @@ public:
 	
 protected:
 	virtual void UpdateFromCompressedFlags(uint8 Flags) override;
+	virtual void OnClientCorrectionReceived(FNetworkPredictionData_Client_Character& ClientData, float TimeStamp, FVector NewLocation, FVector NewVelocity, UPrimitiveComponent* NewBase, FName NewBaseBoneName, bool bHasBase, bool bBaseRelativePosition, uint8 ServerMovementMode) override;
 	virtual void UpdateCharacterStateBeforeMovement(float DeltaSeconds) override;
 	virtual void OnMovementUpdated(float DeltaSeconds, const FVector& OldLocation, const FVector& OldVelocity) override;
 	virtual void OnMovementModeChanged(EMovementMode PreviousMovementMode, uint8 PreviousCustomMode) override;
 	virtual void PhysCustom(float deltaTime, int32 Iterations) override;
 
+	void HandleMoveNormal(float Values, EMoveDirection D) const;
+	void HandleMoveClimb(float Values, EMoveDirection D) const;
+	bool DetectAndClimbUp() const;
+	
 public:
 	UAwCharacterMovementComponent();
 	
@@ -178,17 +192,19 @@ public:
 	UFUNCTION(BlueprintPure)
 	bool IsCustomMoveMode(ECustomMovementMode CustomMode) const;
 	
-	
 	virtual float GetMaxSpeed() const override;
 	virtual float GetMaxAcceleration() const override;
 	virtual float GetMaxBrakingDeceleration() const override;
 	
 	UFUNCTION(BlueprintCallable)
 	bool IsClimbing() const;
-
-	virtual  void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
+	
 	FORCEINLINE FVector GetClimbSurfaceLocation() const { return CurrentClimbSurfaceLocation; }
 	FORCEINLINE FVector GetClimbSurfaceNormal() const { return CurrentClimbSurfaceNormal; }
+	FORCEINLINE AAwCharacter* GetAwOwner() const {return AwCharacterOwner;}
+	void HandleMove(float Values, EMoveDirection D) const;
+	
+	virtual  void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 };
 
 

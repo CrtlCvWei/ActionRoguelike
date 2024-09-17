@@ -25,13 +25,14 @@ void UAwAction_BlackHoleAbilbity::StartAction_Implementation(AActor* Instigator)
 {
 	Super::StartAction_Implementation(Instigator);
 	//
-	if(bIsRunning)
+	if (RepData.bIsRunning)
 		return;
 	if (ensure(this->ProjectileClass) && ensure(AttackAni))
 	{
-		bIsRunning = true;
+		RepData.bIsRunning = true;
+		RepData.Instigator = Instigator;
 		AAwCharacter* Player = Cast<AAwCharacter>(Instigator);
-		if(Player->GetIsClimbing() || Player->GetCharacterMovement()->IsFalling())
+		if (Player->GetIsClimbing() || Player->GetCharacterMovement()->IsFalling())
 		{
 			StopAction_Implementation(Instigator);
 		}
@@ -40,25 +41,22 @@ void UAwAction_BlackHoleAbilbity::StartAction_Implementation(AActor* Instigator)
 			FVector CameraLocation;
 			FRotator CameraRotation;
 			Player->GetController()->GetPlayerViewPoint(CameraLocation, CameraRotation);
-			// Get the camera location and rotation
-			// Turn Player to the camera direction
 			Player->SetActorRotation(FRotator(0.f, CameraRotation.Yaw, 0.f));
 		}
 		// Attac Animation
 		Player->PlayAnimMontage(AttackAni, 1.);
-
-		FTimerHandle ProjectileSpawnHandle;
-		FTimerDelegate Delegate;
-		Delegate.BindUFunction(this, "StartAction_TimeElasped", Player);
-		if (ensure(GetWorld()))
+		if (GetWorld() && GetWorld()->GetNetMode() < NM_Client)
 		{
+			FTimerHandle ProjectileSpawnHandle;
+			FTimerDelegate Delegate;
+			Delegate.BindUFunction(this, "StartAction_TimeElasped", Player);
 			GetWorld()->GetTimerManager().SetTimer(ProjectileSpawnHandle, Delegate, 0.25f, false);
-		}
-		// Cost Mana
-		auto Attr = UAwBlueprintFunctionLibrary::GetAwAttributeComponent(Instigator);
-		if (Attr)
-		{
-			Attr->SetAttributeBase("Mana", -ManaCost.GetCurrentValue(), Instigator);
+			// Cost Mana
+			auto Attr = UAwBlueprintFunctionLibrary::GetAwAttributeComponent(Instigator);
+			if (Attr)
+			{
+				Attr->SetAttributeBase("Mana", -ManaCost.GetCurrentValue(), Instigator);
+			}
 		}
 	}
 }
@@ -80,29 +78,26 @@ void UAwAction_BlackHoleAbilbity::StartAction_TimeElasped(ACharacter* Instigator
 		/** Actor will spawn in desired location, regardless of collisions. */
 		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 		SpawnParams.Instigator = Instigator;
-		
-		if (ProjectileClass->IsChildOf<AAWBlackHolePj>() )
+
+		if (ProjectileClass->IsChildOf<AAWBlackHolePj>())
 		{
 			// Spawn the projectile (Magic balls or any other things...)
 			AAWBlackHolePj* BlackHole = GetWorld()->SpawnActor<AAWBlackHolePj>(ProjectileClass, LocaTM, SpawnParams);
-			
+
 			BlackHole->SetGravityScale(ProjectileGravityScale);
 			BlackHole->SetInitSpeed(InitialSpeed);
 			BlackHole->SetAttractionRange(AttractionRange);
 			BlackHole->SetAttractionStrength(AttractionStrength);
-			
+
 			FTimerDelegate Delegate;
 			Delegate.BindUFunction(this, "ExplosiveAndCauseDamage", Instigator, BlackHole);
-			
+
 			GetWorld()->GetTimerManager().SetTimer(ExplosiveTimerHandle,
 			                                       Delegate,
 			                                       ExplosiveTimeDelay, false);
 			if (EffectsClass.Num() > 0)
 			{
-				// TODO : TRY USE EFFECTS[0] FOR TEST
-
 				// UAwActionEffect* Effects_ins =  Effects[0].GetDefaultObject();
-				// Projectile is null ?
 				FAwGameplayEffectContextHandle GamePlayEffect = GetOwningComponent()->MakeEffectContex(BlackHole, this);
 				auto ProjecileBase = Cast<AAWProjectileBase>(BlackHole);
 				if (ProjecileBase)
@@ -138,7 +133,7 @@ FRotator UAwAction_BlackHoleAbilbity::GetProjectileRotation(FVector HandLocation
 		// 执行射线检测
 		FHitResult HitResult;
 		bool bHit = GetWorld()->LineTraceSingleByChannel(HitResult, CameraLocation, EyeEndLocation, ECC_Visibility,
-														 CollisionParams);
+		                                                 CollisionParams);
 		if (bHit)
 		{
 			// get the hit point
@@ -156,7 +151,7 @@ FRotator UAwAction_BlackHoleAbilbity::GetProjectileRotation(FVector HandLocation
 	}
 }
 
-void UAwAction_BlackHoleAbilbity::ExplosiveAndCauseDamage(AActor* Instigator,AActor* Projectile)
+void UAwAction_BlackHoleAbilbity::ExplosiveAndCauseDamage(AActor* Instigator, AActor* Projectile)
 {
 	AAWBlackHolePj* BlackHole = Cast<AAWBlackHolePj>(Projectile);
 	if (BlackHole)

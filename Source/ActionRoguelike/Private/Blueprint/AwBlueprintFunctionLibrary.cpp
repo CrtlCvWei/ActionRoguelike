@@ -54,6 +54,10 @@ UAwActionComponent* UAwBlueprintFunctionLibrary::GetAwActionComponent(AActor* Ac
 		const AAWPlayerState* AwPS = Cast<AAWPlayerState>(AC->GetPlayerState());
 		if (AwPS)
 		{
+			if(!Cast<UAwActionComponent>(AwPS->GetPlayerAction()))
+			{
+				UE_LOG(LogTemp,Error,TEXT("GetAwActionComponent: Cast Failed"));
+			}
 			return Cast<UAwActionComponent>(AwPS->GetPlayerAction());
 		}
 	}

@@ -15,7 +15,9 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "Kismet/KismetSystemLibrary.h"
+#include "MyMovementComp/System/MoveSystem.h"
 #include "UI/AwHUD.h"
+#include "Utils/utils.h"
 
 
 // Sets default values
@@ -81,8 +83,8 @@ void AAwCharacter::Init_GAS()
 	if (!AttributeComp)
 		return;
 
-	AttributeComp->AttributeChangeBind("Health", this, &AAwCharacter::OnHealthChange,
-	                                   "&AAwCharacter::OnHealthChange");
+	AttributeComp->AttributeChangeBindBase("Health", this, &AAwCharacter::OnHealthChange,
+	                                       "&AAwCharacter::OnHealthChange");
 	if (APlayerController* PC = Cast<APlayerController>(GetController()))
 	{
 		if (AAwHUD* HUD = Cast<AAwHUD>(PC->GetHUD()))
@@ -96,7 +98,19 @@ void AAwCharacter::Init_GAS()
 			}
 		}
 	}
-	GetWorld()->GetTimerManager().ClearTimer(InitTimerHandle);
+
+	if (HasAuthority())
+	{
+		if (const auto ActionComp = GetOwningAction())
+		{
+			ActionComp->SetOwningActor();
+			for (TSubclassOf<UAwAction> ActionClass : ActionComp->GetDefaultActions())
+			{
+				ActionComp->AddAction(ActionClass);
+			}
+		}
+	}
+	// GetWorld()->GetTimerManager().ClearTimer(InitTimerHandle);
 }
 
 # pragma endregion
@@ -108,8 +122,7 @@ void AAwCharacter::PostInitializeComponents()
 
 UAWAttributeComp* AAwCharacter::GetOwningAttribute() const
 {
-	APlayerController* PC = Cast<APlayerController>(GetController());
-	// if(!ensure(PC))
+	const APlayerController* PC = Cast<APlayerController>(GetController());
 	if (!PC)
 		return nullptr;
 	AAWPlayerState* PS = PC->GetPlayerState<AAWPlayerState>();
@@ -157,7 +170,7 @@ void AAwCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 
-	GetWorldTimerManager().SetTimer(InitTimerHandle, this, &AAwCharacter::Init_GAS, 0.2f, true);
+	GetWorldTimerManager().SetTimer(InitTimerHandle, this, &AAwCharacter::Init_GAS, 1.f, false);
 }
 
 // Called every frame
@@ -177,13 +190,11 @@ bool AAwCharacter::GetIsClimbing() const
 
 void AAwCharacter::BeginSprint()
 {
-	// GetCharacterMovement()->MaxWalkSpeed = this->MaxMoveSpeed;
 	GetOwningAction()->StartActionByName(this, "Sprint");
 }
 
 void AAwCharacter::EndSprint()
 {
-	// GetCharacterMovement()->MaxWalkSpeed = this->NormalMoveSpeed;
 	GetOwningAction()->StopActionByName(this, "Sprint");
 }
 
@@ -191,15 +202,7 @@ void AAwCharacter::MoveForward(float Values)
 {
 	if ((Controller != nullptr) && (Values != 0.0f) && AwCharacterMovementComp)
 	{
-		if (AwCharacterMovementComp->IsClimbing())
-		{
-			MoveForwardWhenClimbing(Values);
-			return;
-		}
-		const FRotator Rotation = Controller->GetControlRotation();
-		const FRotator YawRotation(0, Rotation.Yaw, 0);
-		const FVector Direction = FRotationMatrix(YawRotation).GetScaledAxis(EAxis::X);
-		AddMovementInput(Direction, Values);
+		AwCharacterMovementComp->HandleMove(Values, EMoveDirection::X);
 	}
 }
 
@@ -207,19 +210,7 @@ void AAwCharacter::MoveRight(float Values)
 {
 	if ((Controller != nullptr) && (Values != 0.0f) && AwCharacterMovementComp)
 	{
-		if (AwCharacterMovementComp->IsClimbing())
-		{
-			MoveRightWhenClimbing(Values);
-			return;
-		}
-		// rotate the character to the right direction
-		const FRotator Rotation = Controller->GetControlRotation();
-		const FRotator YawRotation(0, Rotation.Yaw, 0);
-		// Get right vector
-		const FVector Direction = FRotationMatrix(YawRotation).GetScaledAxis(EAxis::Y);
-
-		// Add movement in that direction
-		AddMovementInput(Direction, Values);
+		AwCharacterMovementComp->HandleMove(Values, EMoveDirection::Y);
 	}
 }
 
@@ -233,112 +224,6 @@ void AAwCharacter::CrouchPressed()
 void AAwCharacter::RidOffClimbingMode()
 {
 	AwCharacterMovementComp->StopClimb();
-}
-
-void AAwCharacter::MoveForwardWhenClimbing(float Values)
-{
-	FHitResult HitResult;
-	const FVector Direction = FVector::CrossProduct(-AwCharacterMovementComp->GetClimbSurfaceNormal(),
-	                                                GetActorRightVector()).GetSafeNormal();
-
-	const FVector StartLocation = GetActorLocation() + Direction * 100 * Values;
-	const FVector EndLocation = StartLocation + (-AwCharacterMovementComp->GetClimbSurfaceNormal()) * 100;
-
-	bool bHit = UKismetSystemLibrary::CapsuleTraceSingle(GetWorld(), StartLocation, EndLocation,
-	                                                     10, 35, UEngineTypes::ConvertToTraceType(ECC_WorldStatic),
-	                                                     false,
-	                                                     TArray<AActor*>({this,}), EDrawDebugTrace::ForOneFrame,
-	                                                     HitResult,
-	                                                     true);
-	if (!bHit)
-	{
-		// Detect and Climb Up Ledge
-		DetectAndClimbUp();
-		return;
-	}
-	AddMovementInput(Direction, Values);
-}
-
-void AAwCharacter::MoveRightWhenClimbing(float Values)
-{
-	FHitResult ClimbHitResult;
-
-	const FVector Direction = FVector::CrossProduct(-AwCharacterMovementComp->GetClimbSurfaceNormal(),
-	                                                -GetActorUpVector()).GetSafeNormal();
-	const FVector StartLocation = GetMesh()->GetSocketLocation("Chest") + Direction * 50 * Values;
-	const FVector EndLocation = StartLocation + (-AwCharacterMovementComp->GetClimbSurfaceNormal()) * 100;
-
-	bool bHit = UKismetSystemLibrary::CapsuleTraceSingle(GetWorld(), StartLocation, EndLocation,
-	                                                     10, 40, UEngineTypes::ConvertToTraceType(ECC_WorldStatic),
-	                                                     false,
-	                                                     TArray<AActor*>({this}), EDrawDebugTrace::ForOneFrame,
-	                                                     ClimbHitResult,
-	                                                     true);
-
-	AddMovementInput(Direction, Values);
-	// if (!bHit)
-	// {
-	// 	return;
-	// }
-	// FVector OL_N_NEW = ClimbHitResult.Normal;
-	//
-	// FVector ActorLocation = GetMesh()->GetSocketLocation("Chest");
-	// FVector OL_N_OLD = -GetActorForwardVector();
-	// bHit = GetWorld()->LineTraceSingleByObjectType(ClimbHitResult, ActorLocation,
-	//                                                ActorLocation + GetActorForwardVector() * 200,
-	//                                                ECC_WorldStatic, GetIgnoreCollisionParams()); // 忽略当前角色自身，避免与自身发生碰撞
-	//
-	// ActorLocation = GetMesh()->GetSocketLocation("Chest") + GetActorRightVector() * Values;
-	//
-	// float Distance_pre = FVector::Distance(ActorLocation, ClimbHitResult.ImpactPoint);
-	// bHit = GetWorld()->LineTraceSingleByObjectType(ClimbHitResult, ActorLocation,
-	//                                                ActorLocation + GetActorForwardVector() * 200,
-	//                                                ECC_WorldStatic, GetIgnoreCollisionParams());
-	//
-	// if (OL_N_OLD == OL_N_NEW)
-	// {
-	// 	AddMovementInput(Direction, Values);
-	// 	return;
-	// }
-	// float Deta_Distance = FVector::Distance(ActorLocation, ClimbHitResult.ImpactPoint) - Distance_pre;
-	// if (Deta_Distance > 0)
-	// 	Values += tan(FMath::Acos(FVector::DotProduct(OL_N_OLD, OL_N_NEW))) * Deta_Distance * (Values > 0 ? 1 : -1);
-	// AddMovementInput(Direction, Values);
-	// FRotator NewRotator = FRotationMatrix::MakeFromX(-OL_N_NEW).Rotator();
-	// NewRotator = FMath::RInterpTo(GetActorRotation(), NewRotator, GetWorld()->GetDeltaSeconds(), 2.f);
-	// if(!NewRotator.IsNearlyZero())
-	// 	SetActorRotation(NewRotator);
-}
-
-bool AAwCharacter::DetectAndClimbUp()
-{
-	// Detect any obstacle on the edge
-	FHitResult HitResult;
-	const FVector UpVector = FVector::CrossProduct(-AwCharacterMovementComp->GetClimbSurfaceNormal(),
-	                                               GetActorRightVector()).GetSafeNormal();
-	const FVector StartLocation = GetActorLocation() + UpVector * 150;
-	const FVector EndLocation = StartLocation + -AwCharacterMovementComp->GetClimbSurfaceNormal() * 50;
-
-	bool bHit = UKismetSystemLibrary::CapsuleTraceSingle(GetWorld(), StartLocation, EndLocation,
-	                                                     30, 90, UEngineTypes::ConvertToTraceType(ECC_WorldStatic),
-	                                                     false,
-	                                                     TArray<AActor*>({this}), EDrawDebugTrace::ForOneFrame,
-	                                                     HitResult,
-	                                                     true);
-	if (bHit) // if there is any obstacles
-		return false;
-
-	FCollisionQueryParams CollisionParams;
-	CollisionParams.AddIgnoredActor(this); // 忽略当前角色自身，避免与自身发生碰撞
-
-	if (GetWorld()->LineTraceSingleByChannel(HitResult, EndLocation, EndLocation + FVector(0, 0, -200), ECC_Visibility,
-	                                         CollisionParams))
-	{
-		// can land
-		ClimbingUp.Broadcast(HitResult.ImpactPoint);
-		return true;
-	}
-	return false;
 }
 
 void AAwCharacter::EdgeClimbing()
@@ -386,7 +271,7 @@ void AAwCharacter::HealSelf(float v)
 void AAwCharacter::Jump()
 {
 	Super::Jump();
-	if (AwCharacterMovementComp && AwCharacterMovementComp->TraceClimbaleSurface() && !AwCharacterMovementComp->IsClimbing())
+	if (AwCharacterMovementComp && TraceClimbaleSur(AwCharacterMovementComp) && !AwCharacterMovementComp->IsClimbing())
 	{
 		AwCharacterMovementComp->Climb();
 	}

@@ -23,12 +23,13 @@ protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
+	virtual void OnRep_Visble() override;
+	
 	virtual void Interact_Implementation(APawn* InstigorPawn) override;
-	
+
 public:
+
 	
-	UFUNCTION(Blueprintable)
-	bool GetVisble() const { return visible; }
 
 	virtual void PostInitializeComponents() override;
 };

@@ -3,10 +3,14 @@
 
 #include "UI/WidgetController/AwOverayWidgetController.h"
 
+#define ATTRIBUTECHANGEBIND(COMP,NAME)\
+	COMP->AttributeChangeBindBase(#NAME, this, &UAwOverayWidgetController::NAME##BaseChangeForUI,"&UAwOverayWidgetController::"#NAME"BaseChangeForUI");\
+	COMP->AttributeChangeBindCurr(#NAME, this, &UAwOverayWidgetController::NAME##CurrChangeForUI,"&UAwOverayWidgetController::"#NAME"CurrChangeForUI");
+	
 
 void UAwOverayWidgetController::BroadcastInitVals() 
 {
-	UAWAttributeComp* AC  = AttributeComp.Get();
+	UAWAttributeComp* AC  = AwAttributeComp.Get();
 	if (!AC)
 	{
 		UE_LOG(LogTemp, Error, TEXT("AttributeComp is nullptr"));
@@ -26,49 +30,49 @@ void UAwOverayWidgetController::BroadcastInitVals()
 }
 
 
-void UAwOverayWidgetController::HealthBaseChangeForUI(float NewVal, float OldVal) const
+void UAwOverayWidgetController::HealthBaseChangeForUI(AActor* InstigatorActor, UAWAttributeComp* AttributeComp, float NewVal, float Change)
 {
-	OnHealthBaseFChangeorUI.Broadcast(NewVal, OldVal);
+	OnHealthBaseFChangeorUI.Broadcast(NewVal, NewVal-Change);
 }
 
-void UAwOverayWidgetController::HealthCurrChangeForUI(float NewVal, float OldVal) const
+void UAwOverayWidgetController::HealthCurrChangeForUI(AActor* InstigatorActor, UAWAttributeComp* AttributeComp, float NewVal, float Change) 
 {
-	OnHealthCurrFChangeorUI.Broadcast(NewVal, OldVal);
+	OnHealthCurrFChangeorUI.Broadcast(NewVal, NewVal-Change);
 }
 
-void UAwOverayWidgetController::MaxHealthBaseChangeForUI(float NewVal, float OldVal) const
+void UAwOverayWidgetController::MaxHealthBaseChangeForUI(AActor* InstigatorActor, UAWAttributeComp* AttributeComp, float NewVal, float Change) 
 {
-	OnMaxHealthBaseChangeForUI.Broadcast(NewVal, OldVal);
+	OnMaxHealthBaseChangeForUI.Broadcast(NewVal, NewVal-Change);
 }
 
-void UAwOverayWidgetController::MaxHealthCurrChangeForUI(float NewVal, float OldVal) const
+void UAwOverayWidgetController::MaxHealthCurrChangeForUI(AActor* InstigatorActor, UAWAttributeComp* AttributeComp, float NewVal, float Change) 
 {
-	OnMaxHealthCurrChangeForUI.Broadcast(NewVal, OldVal);
+	OnMaxHealthCurrChangeForUI.Broadcast(NewVal, NewVal-Change);
 }
 
-void UAwOverayWidgetController::ManaBaseChangeForUI(float NewVal, float OldVal) const
+void UAwOverayWidgetController::ManaBaseChangeForUI(AActor* InstigatorActor, UAWAttributeComp* AttributeComp, float NewVal, float Change) 
 {
-	OnManaBaseChangeForUI.Broadcast(NewVal, OldVal);
+	OnManaBaseChangeForUI.Broadcast(NewVal, NewVal-Change);
 }
 
-void UAwOverayWidgetController::ManaCurrChangeForUI(float NewVal, float OldVal) const
+void UAwOverayWidgetController::ManaCurrChangeForUI(AActor* InstigatorActor, UAWAttributeComp* AttributeComp, float NewVal, float Change)
 {
-	OnManaCurrChangeForUI.Broadcast(NewVal, OldVal);
+	OnManaCurrChangeForUI.Broadcast(NewVal, NewVal-Change);
 }
 
-void UAwOverayWidgetController::MaxManaBaseChangeForUI(float NewVal, float OldVal) const
+void UAwOverayWidgetController::MaxManaBaseChangeForUI(AActor* InstigatorActor, UAWAttributeComp* AttributeComp, float NewVal, float Change)
 {
-	OnMaxManaBaseChangeForUI.Broadcast(NewVal, OldVal);
+	OnMaxManaBaseChangeForUI.Broadcast(NewVal, NewVal-Change);
 }
 
-void UAwOverayWidgetController::MaxManaCurrChangeForUI(float NewVal, float OldVal) const
+void UAwOverayWidgetController::MaxManaCurrChangeForUI(AActor* InstigatorActor, UAWAttributeComp* AttributeComp, float NewVal, float Change)
 {
-	OnMaxManaCurrChangeForUI.Broadcast(NewVal, OldVal);
+	OnMaxManaCurrChangeForUI.Broadcast(NewVal, NewVal-Change);
 }
 
 void UAwOverayWidgetController::BindCallBacksToDependencies()
 {
-	UAWAttributeComp* AC  = AttributeComp.Get();
+	UAWAttributeComp* AC  = AwAttributeComp.Get();
 	if (!AC)
 	{
 		UE_LOG(LogTemp, Error, TEXT("AttributeComp is nullptr"));
@@ -83,15 +87,12 @@ void UAwOverayWidgetController::BindCallBacksToDependencies()
 	}
 
 	// My Blinding to the Attribute Set
-	AttributeSet->GetAttributeChangeDelegate(FName("Health"),Base).AddUObject(this, &UAwOverayWidgetController::HealthBaseChangeForUI);
-	AttributeSet->GetAttributeChangeDelegate(FName("MaxHealth"),Base).AddUObject(this, &UAwOverayWidgetController::MaxHealthBaseChangeForUI);
-	AttributeSet->GetAttributeChangeDelegate(FName("Mana"),Base).AddUObject(this, &UAwOverayWidgetController::ManaBaseChangeForUI);
-	AttributeSet->GetAttributeChangeDelegate(FName("MaxMana"),Base).AddUObject(this, &UAwOverayWidgetController::MaxManaBaseChangeForUI);
+	ATTRIBUTECHANGEBIND(AC, Health);
+	ATTRIBUTECHANGEBIND(AC, MaxHealth);
+	ATTRIBUTECHANGEBIND(AC, Mana);
+	ATTRIBUTECHANGEBIND(AC, MaxMana);
 
-	AttributeSet->GetAttributeChangeDelegate(FName("Health"),Current).AddUObject(this, &UAwOverayWidgetController::HealthCurrChangeForUI);
-	AttributeSet->GetAttributeChangeDelegate(FName("MaxHealth"),Current).AddUObject(this, &UAwOverayWidgetController::MaxHealthCurrChangeForUI);
-	AttributeSet->GetAttributeChangeDelegate(FName("Mana"),Current).AddUObject(this, &UAwOverayWidgetController::ManaCurrChangeForUI);
-	AttributeSet->GetAttributeChangeDelegate(FName("MaxMana"),Current).AddUObject(this, &UAwOverayWidgetController::MaxManaCurrChangeForUI);
+	// AttributeSet->GetAttributeChangeDelegate(FName("MaxMana"),Current).AddUObject(this, &UAwOverayWidgetController::MaxManaCurrChangeForUI);
 }
 
 

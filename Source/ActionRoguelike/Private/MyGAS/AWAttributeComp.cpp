@@ -6,11 +6,14 @@
 #include "AWGameModeBase.h"
 #include "AWReward.h"
 #include "GameFramework/PlayerState.h"
+#include "Debug/DebugHelper.h"
+#include "Engine/ActorChannel.h"
 #include "Net/UnrealNetwork.h"
 
 #define print(text) if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 1.5, FColor::White,text)
 
-inline  FAwAttributeData UAWAttributeComp::GetAttributeData(const FName AttributeName) const
+
+inline FAwAttributeData UAWAttributeComp::GetAttributeData(const FName AttributeName) const
 {
 	// using reflection to get the attribute
 	auto& Attr = this->AttributeSet;
@@ -18,7 +21,7 @@ inline  FAwAttributeData UAWAttributeComp::GetAttributeData(const FName Attribut
 	if (Prop->GetCPPType().Equals(TEXT("FAwAttributeData")))
 	{
 		FAwAttributeData* Data = Prop->ContainerPtrToValuePtr<FAwAttributeData>(Attr);
-		if(Data)
+		if (Data)
 			return *Data;
 	}
 	// failed
@@ -31,41 +34,45 @@ UAWAttributeComp::UAWAttributeComp()
 	// ...
 	AttributeSet = CreateDefaultSubobject<UAwAttributeSet>(TEXT("AttributeSet"));
 	CreateAllAttributeChangeMap();
+	SetIsReplicatedByDefault(true);
 }
 
 void UAWAttributeComp::CreateAllAttributeChangeMap()
 {
-	AllAttributeChangeMap.Empty();
+	AllAttributeChangeMapBase.Empty();
+	AllAttributeChangeMapCurr.Empty();
 	for (TFieldIterator<FProperty> Prop(this->AttributeSet->GetClass()); Prop; ++Prop)
 	{
 		if (Prop->GetCPPType().Equals(TEXT("FAwAttributeData")))
 		{
 			FName Name = Prop->GetFName();
 			FOnAttributeChangeSignture Delegate;
-			AllAttributeChangeMap.Add(Name, Delegate);
+			AllAttributeChangeMapBase.Add(Name, Delegate);
+			AllAttributeChangeMapCurr.Add(Name, Delegate);
 		}
 	}
 }
 
-bool UAWAttributeComp::SetHealth(const float v,AActor* Sourcer)
+bool UAWAttributeComp::SetHealth(const float v, AActor* Sourcer)
 {
-	if (AttributeSet->GetHealthBase() + AttributeSet->GetHealthCurrent() >= 0)	
+	if (AttributeSet->GetHealthBase() + AttributeSet->GetHealthCurrent() >= 0)
 	{
 		// Base Health Base
 		float Actural = v;
-		if (AttributeSet->GetHealthCurrent() + v >= 0 && v < 0 )
+		if (AttributeSet->GetHealthCurrent() + v >= 0 && v < 0)
 		{
-			// AttributeSet->SetHealthCurrent(AttributeSet->GetHealthCurrent() + v);
-			
+			AttributeSet->SetHealthCurrent(AttributeSet->GetHealthCurrent() + v);
 			Actural = 0;
 		}
-		else if(AttributeSet->GetHealthCurrent() + v < 0 && v < 0)
+		else if (AttributeSet->GetHealthCurrent() + v < 0 && v < 0)
 		{
-			// AttributeSet->SetHealthCurrent(0);
+			AttributeSet->SetHealthCurrent(0);
 			Actural = v + AttributeSet->GetHealthCurrent();
 		}
 		float NewHP = AttributeSet->GetHealthBase() + Actural;
-		NewHP = NewHP > AttributeSet->GetMaxHealthBase() + AttributeSet->GetMaxHealthCurrent() ? AttributeSet->GetMaxHealthBase() + AttributeSet->GetMaxHealthCurrent() : NewHP;
+		NewHP = NewHP > AttributeSet->GetMaxHealthBase() + AttributeSet->GetMaxHealthCurrent()
+			        ? AttributeSet->GetMaxHealthBase() + AttributeSet->GetMaxHealthCurrent()
+			        : NewHP;
 		NewHP = NewHP < 0 ? 0 : NewHP;
 		if (NewHP == 0)
 		{
@@ -87,55 +94,57 @@ bool UAWAttributeComp::SetHealth(const float v,AActor* Sourcer)
 			}
 		}
 		AttributeSet->SetHealthBase(NewHP);
+		AttributeDataChangeBroadcast(AttributeSet, "Health", NewHP, NewHP - v, AttributeChangedType::Base);
 		// trigger the event!
-		AttributeChangeBoardCast("Health", Sourcer, AttributeSet->GetHealthBase() + AttributeSet->GetHealthCurrent(), v);
+		AttributeChangeBoardCast("Health", Sourcer, AttributeSet->GetHealthBase() + AttributeSet->GetHealthCurrent(),v,true);
 		return true;
 	}
 	return false;
 }
 
-bool UAWAttributeComp::SetAttributeBase(FName AttributeName, const float v,AActor* Sourcer)
+bool UAWAttributeComp::SetAttributeBase(FName AttributeName, const float v, AActor* Sourcer)
 {
 	//TODO: MAKE SET ATTRIBUTE FUNCTION WORK
-	if(AttributeName.ToString().Contains("Max"))
+	if (AttributeName.ToString().Contains("Max"))
 	{
 		//	TODO : Max Attribute Case
 		return false;
 	}
-	
-	if (AttributeName == "Health" || AttributeName == "health" )
+
+	if (AttributeName == "Health" || AttributeName == "health")
 	{
-		return SetHealth(v,Sourcer);
+		return SetHealth(v, Sourcer);
 	}
 	// Other Case
-	static  FAwAttributeData* Data = nullptr;
+	static FAwAttributeData* Data = nullptr;
 	auto& Attr = this->AttributeSet;
 	FProperty* Prop = FindFieldChecked<FProperty>(AttributeSet.GetClass(), AttributeName);
-	if(!Prop)
+	if (!Prop)
 		return false;
 	if (Prop->GetCPPType().Equals(TEXT("FAwAttributeData")))
 	{
 		Data = Prop->ContainerPtrToValuePtr<FAwAttributeData>(Attr);
-		if(!Data)
+		if (!Data)
 			return false;
 	}
 	else
 		return false;
-	
-	
+
+
 	float NewValue = Data->GetBaseValue() + v;
-	const float MaxValue = GetAttributeBase(FName("Max"+AttributeName.ToString()));
+	const float MaxValue = GetAttributeBase(FName("Max" + AttributeName.ToString()));
 	NewValue = NewValue > MaxValue ? MaxValue : NewValue;
 	NewValue = NewValue < 0 ? 0 : NewValue;
-	
+
 	Data->SetBaseValue(NewValue);
-	AttributeDataChangeBroadcast(AttributeSet, AttributeName,  Data->GetBaseValue(),NewValue - v,AttributeChangedType::Base);
-	
+	AttributeDataChangeBroadcast(AttributeSet, AttributeName, Data->GetBaseValue(), NewValue - v,
+	                             AttributeChangedType::Base);
+
 	check(NewValue == Data->GetBaseValue());
-	
+
 	// trigger the event!
 	NewValue += Data->GetCurrentValue();
-	AttributeChangeBoardCast(AttributeName, Sourcer, NewValue, v);
+	AttributeChangeBoardCast(AttributeName, Sourcer, NewValue, v,true);
 	return true;
 }
 
@@ -143,48 +152,42 @@ bool UAWAttributeComp::SetAttributeCurr(FName AttributeName, const float v, AAct
 {
 	//TODO: MAKE SET ATTRIBUTE FUNCTION WORK
 	
-	// if (AttributeName == "Health" || AttributeName == "health" )
-	// {
-	// 	return SetHealth(v,Sourcer);
-	// }
 	// Other Case
-	static  FAwAttributeData* Data = nullptr;
+	static FAwAttributeData* Data = nullptr;
 	auto& Attr = this->AttributeSet;
 	FProperty* Prop = FindFieldChecked<FProperty>(AttributeSet.GetClass(), AttributeName);
-	if(!Prop)
+	if (!Prop)
 		return false;
 	if (Prop->GetCPPType().Equals(TEXT("FAwAttributeData")))
 	{
 		Data = Prop->ContainerPtrToValuePtr<FAwAttributeData>(Attr);
-		if(!Data)
+		if (!Data)
 			return false;
 	}
 	else
 		return false;
-	
+
 	float NewCurrValue = Data->GetCurrentValue() + v;
 
 	Data->SetCurrentValue(NewCurrValue);
-	
-	AttributeDataChangeBroadcast(AttributeSet, AttributeName,  Data->GetCurrentValue(),NewCurrValue - v,AttributeChangedType::Current);
-	
+
+	AttributeDataChangeBroadcast(AttributeSet, AttributeName, Data->GetCurrentValue(), NewCurrValue - v,
+	                             AttributeChangedType::Current);
+
 	check(NewCurrValue == Data->GetCurrentValue());
-	
+
 	float NewValue = Data->GetCurrentValue() + Data->GetBaseValue();
 	// trigger the event!
-	AttributeChangeBoardCast(AttributeName, Sourcer, NewValue, v);
+	AttributeChangeBoardCast(AttributeName, Sourcer, NewValue, v,false);
 	return true;
 }
 
 bool UAWAttributeComp::isAlive() const
 {
-	if(GetMaxHealth() > 0.f)
-		if(GetHealth() > 0.f )
-			return true;
-	return false;
+	return GetMaxHealth() > 0.f && GetHealth() > 0.f;
 }
 
-inline  float UAWAttributeComp::GetAttributeBase(FName AttributeName) const
+inline float UAWAttributeComp::GetAttributeBase(FName AttributeName) const
 {
 	auto Attr = GetAttributeData(AttributeName);
 	if (Attr.IsNotVaild())
@@ -213,7 +216,7 @@ bool UAWAttributeComp::SetOwningActor()
 	return false;
 }
 
-inline  float UAWAttributeComp::GetAttributeCurrent(FName AttributeName) const
+inline float UAWAttributeComp::GetAttributeCurrent(FName AttributeName) const
 {
 	auto Attr = GetAttributeData(AttributeName);
 	if (Attr.IsNotVaild())
@@ -229,16 +232,43 @@ float UAWAttributeComp::GetActualAttribute(FName AttributeName) const
 	return GetAttributeBase(AttributeName) + GetAttributeCurrent(AttributeName);
 }
 
-void UAWAttributeComp::AttributeChangeBoardCast(const FName Name, AActor* Instigator, float NewValue, float Change)
+void UAWAttributeComp::AttributeChangeBoardCast_Implementation(const FName Name, AActor* Instigator, float NewValue,
+                                                               float Change, bool bIsBase)
 {
-	if (ensureAlways(AllAttributeChangeMap.Contains(Name))) // check if the map contains the key
+	
+	if(GetOwningActor()&& GetOwningActor()->HasAuthority() )
+		Debug::Print("Server :Hey");
+	else
 	{
-		AllAttributeChangeMap[Name].Broadcast(Instigator, this, NewValue, Change);
+		Debug::Print("Client :Hey");
 	}
+	if (bIsBase)
+	{
+		if(AllAttributeChangeMapBase.Contains(Name))
+			AllAttributeChangeMapBase[Name].Broadcast(Instigator, this, NewValue, Change);
+	}
+	else
+	{
+		if(AllAttributeChangeMapCurr.Contains(Name))
+			AllAttributeChangeMapCurr[Name].Broadcast(Instigator, this, NewValue, Change);
+	}
+}
+
+void UAWAttributeComp::BeginPlay()
+{
+	Super::BeginPlay();
+	SetOwningActor();
+}
+
+bool UAWAttributeComp::ReplicateSubobjects(UActorChannel* Channel, FOutBunch* Bunch, FReplicationFlags* RepFlags)
+{
+	auto WroteSomething =  Super::ReplicateSubobjects(Channel, Bunch, RepFlags);
+	WroteSomething |= Channel->ReplicateSubobject(AttributeSet, *Bunch, *RepFlags);
+
+	return WroteSomething;
 }
 
 void UAWAttributeComp::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-	DOREPLIFETIME(UAWAttributeComp, AttributeSet);
 }

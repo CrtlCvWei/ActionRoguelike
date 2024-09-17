@@ -6,6 +6,7 @@
 #include "AwCharacter.h"
 #include "..\Public\MyGAS/AWAttributeComp.h"
 #include "Components/SphereComponent.h"
+#include "Net/UnrealNetwork.h"
 
 // Sets default values
 AAWHealPoint::AAWHealPoint()
@@ -18,6 +19,11 @@ void AAWHealPoint::BeginPlay()
 {
 	Super::BeginPlay();
 	ShowUp();
+}
+
+void AAWHealPoint::OnRep_Visble()
+{
+	SetVisble(this->visible);
 }
 
 void AAWHealPoint::Interact_Implementation(APawn* InstigorPawn)
@@ -33,6 +39,7 @@ void AAWHealPoint::Interact_Implementation(APawn* InstigorPawn)
 			Attribute->SetHealth(50.f,this);
 			// trigger the event
 			CoolDown();
+			// if in server, call the function
 		}
 	}
 }

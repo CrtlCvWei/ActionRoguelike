@@ -56,21 +56,33 @@ class UAwActionComponent : public UActorComponent
 {
 	GENERATED_BODY()
 
-	UPROPERTY()
+	UPROPERTY(Replicated)
 	AActor* OwningActor;
 
 protected:
-	UPROPERTY()
-	TArray<UAwAction*> Actions;
 
+	/* Granted abilities at game start */
+	UPROPERTY(EditAnywhere,BlueprintReadOnly, Category = "Actions")
+	TArray<TSubclassOf<UAwAction>> DefaultActions;
+	
+	UPROPERTY(Replicated,EditAnywhere,BlueprintReadOnly, Category="Actions")
+	TArray<TObjectPtr<UAwAction>> Actions;
+
+	
 	UPROPERTY()
 	TMap<FName, FAwEffectRecorder> EffectObjectsPools; // 
 
+	UFUNCTION()
+	void OnRep_Actions();
+	
 	virtual void BeginPlay() override;
 
-	
-	
+
 public:
+
+	UFUNCTION(BlueprintCallable)
+	void CheckActions() const ;
+	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Tags")
 	FGameplayTagContainer ActiveGameplayTags;
 
@@ -85,19 +97,27 @@ public:
 	
 	// Sets default values for this component's properties
 	UAwActionComponent();
-	UFUNCTION(BlueprintCallable, Category="Actions")
-	bool AddAction(TSubclassOf<UAwAction> ActionClass);
+	UFUNCTION(Server,Reliable,BlueprintCallable, Category="Actions")
+	void AddAction(TSubclassOf<UAwAction> ActionClass);
 
-	UFUNCTION(BlueprintCallable, Category="Actions")
-	bool RemoveAction(UAwAction* ActionToRemove);
+	UFUNCTION(Server,Reliable,BlueprintCallable, Category="Actions")
+	void RemoveAction(UAwAction* ActionToRemove);
 
 	UFUNCTION(BlueprintCallable, Category="Effects")
 	bool ApplyEffect(const FAwGameplayEffectContext& EffectContext, UAWAttributeComp* AttributeComp);
 
+	
+	
 	UFUNCTION(BlueprintCallable, Category="Actions")
 	void StartActionByName(AActor* Instigator, FName ActionName);
 	UFUNCTION(BlueprintCallable, Category="Actions")
 	void StopActionByName(AActor* Instigator, FName ActionName);
+
+	UFUNCTION(Server,Reliable,BlueprintCallable, Category="Actions")
+	void ServeStartActionByName(AActor* Instigator, FName ActionName);
+	UFUNCTION(Server,Reliable,BlueprintCallable, Category="Actions")
+	void ServeStopActionByName(AActor* Instigator, FName ActionName);
+
 	UFUNCTION(Blueprintable)
 	UAwAction* GetActionByName(FName ActionName);
 
@@ -113,6 +133,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category="Actions")
 	AActor* GetOwningActor() const { return OwningActor; }
 
+	UFUNCTION(BlueprintCallable)
+	TArray<TSubclassOf<UAwAction>> GetDefaultActions() const { return DefaultActions; }
+	
 	UFUNCTION(Blueprintable)
 	void ApplyInstanceEffects(UAwActionEffect* Effect, AActor* Insigator, UAWAttributeComp* AttributeComp);
 
@@ -140,4 +163,8 @@ public:
 
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType,
 	                           FActorComponentTickFunction* ThisTickFunction) override;
+
+	virtual bool ReplicateSubobjects(UActorChannel* Channel, FOutBunch* Bunch, FReplicationFlags* RepFlags) override;
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
 };

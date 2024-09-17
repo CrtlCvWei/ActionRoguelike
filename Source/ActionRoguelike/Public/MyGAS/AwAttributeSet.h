@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "AttributeSet.h"
+#include "Net/UnrealNetwork.h"
 // #include "AbilitySystemComponent.h"
 #include "AwAttributeSet.generated.h"
 
@@ -204,10 +205,11 @@ class ACTIONROGUELIKE_API UAwAttributeSet : public UAttributeSet
 	};
 
 protected:
-	UPROPERTY(BlueprintReadOnly)
-	AActor* OwningActor;
+	
+	UPROPERTY(Replicated, BlueprintReadOnly)
+	TObjectPtr<AActor> OwningActor;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Attributes")
+	UPROPERTY(ReplicatedUsing = OnRep_Health ,EditAnywhere, BlueprintReadOnly, Category = "Attributes")
 	FAwAttributeData Health;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Attributes")
@@ -226,16 +228,18 @@ protected:
 	
 	TMap<FName, FOnAwGameplayAttributeValueChange> AttributeBaseValueChangeDelegates;
 	
-	
 	void CreateAttributeDataChangeDelegates();
 	
 	void AttributeDataChangeDelegate(FName Name, float NewValue, float OldValue,AttributeChangedType Type);
+	
+	UFUNCTION(NetMulticast,Unreliable)
+	void MultiCastAttributeDataChangeDelegate(FName Name, float NewValue, float OldValue,AttributeChangedType Type);
 
+	virtual bool IsSupportedForNetworking() const override {return true;};
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 public:
 	UAwAttributeSet();
 	void InitFun();
-
-	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 	AWATTRIBUTE_ACCESSORS(UAwAttributeSet, Health);
 	AWATTRIBUTE_ACCESSORS(UAwAttributeSet, MaxHealth);
@@ -250,7 +254,7 @@ public:
 	TArray<FReplicaAttributesEntry_FName_FAwAttributeData> ReplicaAttributesArray;
 	
 	UFUNCTION()
-	void OnRep_Health(const FAwAttributeData& OldHealth);
+	void OnRep_Health();
 	
 	UFUNCTION()
 	void OnRep_Mana(const FAwAttributeData& OldMana);
@@ -260,7 +264,7 @@ public:
 
 	UFUNCTION()
 	void OnRep_ReplicaAttributeMap();
-
+	
 	UFUNCTION(BlueprintCallable)
 	TMap<FName, FAwAttributeData> GetAttributes() const;
 
@@ -280,3 +284,5 @@ public:
 	UFUNCTION()
 	inline void SetOwningActor();
 };
+
+

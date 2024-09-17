@@ -82,6 +82,15 @@ void AAWGameModeBase::PlayerReSpawnTimeElasped(APlayerController* Controller)
 		Controller->UnPossess();
 		RestartPlayer(Controller);
 		Old->Destroy();
+		auto PS =  Controller->GetPlayerState<AAWPlayerState>();
+		if (PS)
+		{
+			auto Attribute = PS->GetPlayerAttribute();
+			if (Attribute)
+			{
+				Attribute->SetHealth(Attribute->GetMaxHealth(), nullptr);
+			}
+		}
 	}
 }
 

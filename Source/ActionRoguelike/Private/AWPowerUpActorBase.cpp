@@ -4,12 +4,14 @@
 #include "AWPowerUpActorBase.h"
 
 #include "Components/SphereComponent.h"
+#include "Net/UnrealNetwork.h"
 
 // Sets default values
 AAWPowerUpActorBase::AAWPowerUpActorBase()
 {
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
+	SetReplicates(true);
 	SphereComp = CreateDefaultSubobject<USphereComponent>("SphereComp");
 	RootComponent = SphereComp;
 	SphereComp->SetCollisionObjectType(ECC_WorldDynamic);
@@ -20,6 +22,10 @@ AAWPowerUpActorBase::AAWPowerUpActorBase()
 		MeshComp->SetupAttachment(RootComponent);
 	SetVisble(true);
 	SpawnTime = 10.f;
+}
+
+void AAWPowerUpActorBase::OnRep_Visble()
+{
 }
 
 void AAWPowerUpActorBase::SetVisble(bool bNewState)
@@ -35,21 +41,30 @@ void AAWPowerUpActorBase::BeginPlay()
 	Super::BeginPlay();
 }
 
-void AAWPowerUpActorBase::CoolDown()
+void AAWPowerUpActorBase::CoolDown_Implementation()
 {
-	SetVisble(false);
+	visible = false;
+	OnRep_Visble();
 	GetWorld()->GetTimerManager().SetTimer(InvisibleTimerHandle,this,&AAWPowerUpActorBase::ShowUp,SpawnTime);
 }
 
-void AAWPowerUpActorBase::ShowUp()
+void AAWPowerUpActorBase::ShowUp_Implementation()
 {
-	SetVisble(true);
+	visible = true;
+	OnRep_Visble();
 }
+
 
 void AAWPowerUpActorBase::Interact_Implementation(APawn* InstigorPawn)
 {
 	IAWGameplayInterface::Interact_Implementation(InstigorPawn);
 	// any other logics implements
+}
+
+void AAWPowerUpActorBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	DOREPLIFETIME(AAWPowerUpActorBase, visible);
 }
 
 

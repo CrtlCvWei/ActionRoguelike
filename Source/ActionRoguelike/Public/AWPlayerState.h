@@ -23,15 +23,22 @@ protected:
 	int32 Credits = 0;
 	int32 Scores = 0;
 
-	UPROPERTY(Replicated,BlueprintReadOnly,Category="PlayerAttribute")
-	TObjectPtr<UAWAttributeComp> PlayerAttributeComp = nullptr;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly,Category="PlayerAttribute")
+	TObjectPtr<UAWAttributeComp> PlayerAttributeComp;
 
-	UPROPERTY(Replicated,BlueprintReadOnly,Category="PlayerAttribute")
-	TObjectPtr<UAwActionComponent> PlayerActionComp = nullptr;
+	UPROPERTY(EditAnywhere,BlueprintReadOnly,Category="PlayerAttribute")
+	TObjectPtr<UAwActionComponent> PlayerActionComp;
+
+	UFUNCTION()
+	void OnRep_ActionComp();
+	UFUNCTION()
+	void OnRep_AttributeComp();
+	
 public:
 	
 	AAWPlayerState();
 
+	
 	UFUNCTION(BlueprintCallable,Category="Credits&Scores")
 	int32 GetCredits() const;
 	UFUNCTION(BlueprintCallable,Category="Credits&Scores")

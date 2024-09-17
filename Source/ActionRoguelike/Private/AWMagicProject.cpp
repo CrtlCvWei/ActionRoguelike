@@ -72,8 +72,11 @@ void AAWMagicProject::OnBeginOverlap_Implementation(UPrimitiveComponent* Overlap
 		return;
 	if (OtherActor != this->GetInstigator())
 	{
-		// UE_LOG(LogTemp, Error, TEXT("ACTOR COMP: %s , %p"), *OtherComp->GetName(), &OtherComp);
-		AwGamePlayEffectImpact(OtherActor);
+		UE_LOG(LogTemp, Error, TEXT("ACTOR: %s , %p"), *OtherActor->GetName(), &OtherActor);
+
+		// Only On the Server
+		if(GetWorld()->GetNetMode() < NM_Client)
+			AwGamePlayEffectImpact(OtherActor);
 		if (this->Destroy())
 		{
 			if (VanishAudio && VanishAudio->Sound)
@@ -94,10 +97,4 @@ void AAWMagicProject::PostInitializeComponents()
 void AAWMagicProject::BeginPlay()
 {
 	Super::BeginPlay();
-}
-
-// Called every frame
-void AAWMagicProject::Tick(float DeltaTime)
-{
-	Super::Tick(DeltaTime);
 }

@@ -45,7 +45,7 @@ void AAWAICharacter::BeginPlay()
 	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
 	if (ensure(this->AttributeComp))
 	{
-		AttributeComp->AttributeChangeBind("Health", this, &AAWAICharacter::OnHealthChange,"&AAWAICharacter::OnHealthChange");
+		AttributeComp->AttributeChangeBindBase("Health", this, &AAWAICharacter::OnHealthChange,"&AAWAICharacter::OnHealthChange");
 	}
 	if (ensure(this->SensingComp))
 	{

@@ -15,10 +15,13 @@ class AAWItemChest : public AActor, public IAWGameplayInterface
 	void Init_Paramters();
 
 protected:
-
+	UPROPERTY(Replicated,EditAnywhere,Category="Lock")
 	bool bUsed;
+
+	UPROPERTY(ReplicatedUsing=OnRep_LidOpened,EditAnywhere, Category="Lock")
+	bool LidOpened;
 	
-	UPROPERTY(EditAnywhere,Category="Lock")
+	UPROPERTY(Replicated,EditAnywhere,Category="Lock")
 	bool bLock;
 	// Mesh?
 	UPROPERTY(VisibleAnywhere,BlueprintReadOnly)
@@ -40,11 +43,18 @@ protected:
 	UFUNCTION(BlueprintCallable)
 	bool getLock(){return this->bLock;}
 
+	UFUNCTION(BlueprintCallable,BlueprintImplementableEvent)
+	void OnRep_LidOpened();
+
+	UFUNCTION(Client,Unreliable)
+	void CallTips();
+	
 	UFUNCTION()
-	void Interact_Implementation(APawn* InstigorPawn) override;
+	virtual  void Interact_Implementation(APawn* InstigorPawn) override;
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 public:
 	UPROPERTY(EditAnywhere)
